@@ -1,5 +1,5 @@
 #!/bin/bash
-# NAVIGATION
+# BASIC COMMANDS 
 # ls : Display the contents of the directory. 
 # If you call the command without parameters, it shows you
 # the contents of the current directory.
@@ -22,6 +22,8 @@ touch /tmp/somevimfile
 find /tmp -name *vim*
 # touch : create a new file
 touch test.txt
+touch some.yml
+touch some_git.yml
 # echo : print something
 # > : redirect output of a command 
 echo "some PATH" > test.txt 
@@ -31,3 +33,7 @@ grep -Rn "PATH" .
 grep "PATH" * .*
 # find : find a file or directory by its name 
 find . -name "*.txt"
+# pipe : send the output of one command to another
+find . -name "*.yml" | grep "git" > tst.txt
+# file permissions
+
