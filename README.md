@@ -8,3 +8,4 @@ https://en.wikipedia.org/wiki/Wildcard_character
 
 https://en.wikipedia.org/wiki/File-system_permissions
 
+https://itsfoss.com/linux-man-page-guide/
