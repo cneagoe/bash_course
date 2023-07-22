@@ -1,5 +1,12 @@
 #!/bin/bash
 # BASIC COMMANDS 
+# accessing documentation
+man ls
+# environment variables
+# find out what shell you're using
+echo $SHELL
+# check the PATH variable
+echo $PATH
 # ls : Display the contents of the directory. 
 # If you call the command without parameters, it shows you
 # the contents of the current directory.
@@ -10,30 +17,60 @@ ls
 pwd
 # cd : Go to the directory at the specified 
 # relative or absolute path. 
-cd tmp
+cd /tmp
 cd .. 
-# mount : Mount the disk to the root file system. If you call the
-# command without parameters, it shows a list of all
-# mounted disks.
-mount
-# find : Find a file or directory. The first parameter find . -name vim
-# specifies the directory to start searching. 
+cd ~
+# create a new empty file at a location
 touch /tmp/somevimfile
+# find : Find a file or directory. 
+# The first parameter find . -name vim specifies the directory to start searching. 
 find /tmp -name *vim*
 # touch : create a new file
 touch test.txt
 touch some.yml
 touch some_git.yml
 # echo : print something
-# > : redirect output of a command 
+# > and >> : redirect output of a command 
 echo "some PATH" > test.txt 
-# grep : Find a file by its contents. 
+echo "some other PATH" >> test.txt 
+# grep : Search in the contents of a file or directory. 
 grep "PATH" *
 grep -Rn "PATH" .
 grep "PATH" * .*
-# find : find a file or directory by its name 
+# find : Search for a file or directory with a certain name or type 
 find . -name "*.txt"
 # pipe : send the output of one command to another
 find . -name "*.yml" | grep "git" > tst.txt
 # file permissions
+touch script.sh
+echo '#!/bin/bash' > script.sh
+echo 'echo "hello World"' >> script.sh
+# check permissions
+ll script.sh
+ls -altr script.sh
+# try to execute the script
+./script.sh
+# try to execute the script 
+bash script.sh
+# add the execute permission
+chmod +x script.sh
+# try to execute the script again
+./script.sh
+# remove the script
+rm script.sh
+
+# create your own environment variables
+export IRONMAN=Tony
+echo $IRONMAN
+
+# create a variable in a script
+NAME=value
+
+# file paths
+# absolute path example
+/home/codio/workspace
+# relative path example
+./workspace
+
+
 
