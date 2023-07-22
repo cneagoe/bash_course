@@ -1,7 +1,12 @@
 #!/bin/bash
 # BASIC COMMANDS 
+
 # accessing documentation
 man ls
+
+# view history of commands run so far
+history
+
 # environment variables
 # find out what shell you're using
 echo $SHELL
@@ -41,6 +46,7 @@ grep "PATH" * .*
 find . -name "*.txt"
 # pipe : send the output of one command to another
 find . -name "*.yml" | grep "git" > tst.txt
+history | grep ls
 # file permissions
 touch script.sh
 echo '#!/bin/bash' > script.sh
