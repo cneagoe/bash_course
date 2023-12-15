@@ -421,6 +421,143 @@ rm -r mydir
 # You’ll notice that the hidden files as well as the regular files have been success-
 # fully copied.
 
+# links 
+# Links on Linux are like aliases that are assigned to a file. There are symbolic links, and there are hard links. 
+
+# hard links
+# Linux stores administrative data about files in inodes. The inode is used to store all
+# administrative data about files. Every file on Linux has an inode, and in the inode,
+# important information about the file is stored:
+# The data block where the file contents are stored
+# The creation, access, and modification date
+# Permissions
+# File owners
+# Just one important piece of information is not stored in the inode: the name of the file. 
+# Names are stored in the directory, and each filename knows which inode it has to address to access further file information. 
+# It is interesting to know that an inode does not know which name it has; it just knows how many names are associated with the inode. 
+# These names are referred to as hard links. 
+# So every file always has one hard link to start with, which is the name of the file
+# When you create a file, you give it a name. Basically, this name is a hard link. 
+# On a Linux file system, multiple hard links can be created to a file. 
+# This is useful if a file with the same contents needs to be available at multiple locations, and you need an easy solution to keep the contents the same. 
+# If a change is applied to any one of the hard links, it will show in all other hard links as well, as all hard links point to the same data blocks. 
+# Some restrictions apply to hard links, though:
+# Hard links must exist all on the same device (partition, logical volume, etc).
+# You cannot create hard links to directories.
+# When the last name (hard link) to a file is removed, access to the file’s data is also removed.
+
+# soft links
+# A symbolic link (also referred to as a soft link) does not link directly to the inode but to the name of the file. 
+# This makes symbolic links much more flexible, but it also has some disadvantages. 
+# The advantage of symbolic links is that they can link to files on other devices, as well as on directories. 
+# The major disadvantage is that when the original file is removed, the symbolic link becomes invalid and does not work any longer
+
+# create links
+ln /etc/hosts .     # Creates a link to the file /etc/hosts in the current directory
+ln -s /etc/hosts .  # Creates a symbolic link to the file /etc/hosts in the current directory
+ln -s /home /tmp    # Creates a symbolic link to the directory /home in the directory /tmp
+
+# exercises removing links
+# Removing links can be dangerous. To show you why, let’s consider the following procedure.
+# 1. Make a directory named test in your home directory: mkdir ~/test
+# 2. Copy all files that have a name starting with a, b, c, d, or e from /etc to this directory: cp /etc/[a-e]* ~/test
+# 3. Type ls -l ~/test/ to verify the contents of the test directory.
+# 4. Make sure that you are in your home directory, by using cd without arguments.
+# 5. Type ln -s test link
+# 6. Type rm link. This removes the symbolic link. (Do not use -r or -f to remove symbolic links, even if they are subdirectories.)
+# 7. Type ls -l. You’ll see that the symbolic link has been removed.
+# 8. Let’s do it again. Type ln -s test link to create the link again.
+# 9. Type rm -rf link/ (which is what you would get by using Bash command-line completion).
+# 10. Type ls. You’ll see that the directory link still exists.
+# 11. Type ls test/. You’ll see the directory test is now empty.
+
+# exercise working with links
+# 1. From your home directory, type ln /etc/passwd . (Make sure that the command
+# ends with a dot that has a space before it!) This command gives you an “oper-
+# ation not permitted” error because you are not the owner of /etc/passwd.
+# 2. Type ln -s /etc/passwd . (Again, make sure that the command ends with a space
+# and a dot!) This works; you do not have to be the owner to create a symbolic link.
+# 3. Type ln -s /etc/hosts (this time with no dot at the end of the command). 
+# You’ll notice this command also works. If the target is not specified, the link is created in the current directory.
+# 4. Type touch newfile and create a hard link to this file by using ln newfile linkedfile
+# 5. Type ls -l and notice the link counter for newfile and linkedfile, which is currently set to 2.
+# 6. Type ln -s newfile symlinkfile to create a symbolic link to newfile.
+# 7. Type rm newfile
+# 8. Type cat symlinkfile. You will get a “no such file or directory” error message because the original file could not be found.
+# 9. Type cat linkedfile. This gives no problem.
+# 10. Type ls -l and look at the way the symlinkfile is displayed. Also look at linkedfile, which now has the link counter set to 1.
+# 11. Type ln linkedfile newfile
+# 12. Type ls -l again. You’ll see that the original situation has been restored.
+
+# tar command
+# create an archive
+tar -cvf /root/homes.tar /home
+# add to an existing archive
+tar -rvf /root/homes.tar /etc/hosts
+# update an existing archive
+tar -uvf /root/homes.tar /home
+# check contents
+tar -tvf /root/homes.tar
+# extract archive
+tar -xvf /root/etc.tar etc/hosts
+# The Tape ARchiver (tar) utility is used to archive and dearchive files and folders.
+
+# tar options
+# Option  Use
+# c       Creates an archive.
+# v       Shows verbose output while tar is working.
+# t       Shows the contents of an archive.
+# z       Compresses/decompresses the archive while creating it, by using gzip.
+# j       Compresses/decompresses the archive by using bzip2.
+# J       Compresses/decompresses the archive using xz.
+# x       Extracts an archive.
+# u       Updates an archive; only newer files will be written to the archive.
+# C       Changes the working directory before performing the command.
+# r       Appends files to an archive.
+
+# exercises tar
+# 1. Open a root shell on your server. When you log in, the home directory of user
+# root will become the current directory, so all relative filenames used in this exercise refer to /root/.
+# 2. Type tar cvf etc.tar /etc to archive the contents of the /etc directory.
+# 3. Type file etc.tar and read the information that is provided by the command.
+# This should look like the following:
+# [root@server1 ~]# file etc.tartar: POSIX tar archive (GNU)
+# 4. Type gzip etc.tar to compress the tar file, which packages it into the file etc.tar.gz.
+# 5. Type tar tvf etc.tar.gz Notice that the tar command has no issues reading from a gzip compressed file. 
+# Also notice that the archive content consists of all relative filenames.
+# 6. Type tar xvf etc.tar.gz etc/hosts
+# 7. Type ls -R Notice that a subdirectory etc has been created in the current directory. 
+# In this subdirectory, the file hosts has been restored.
+# 8. Type gunzip etc.tar.gz This decompresses the compressed file but does not
+# change anything else with regard to the tar command.
+# 9. Type tar xvf etc.tar -C /tmp etc/passwd This extracts the password file
+# including its relative pathname to the /tmp directory. Use ls -l /tmp/etc/ passwd to verify.
+# 10. Type tar cjvf homes.tar /home This creates a compressed archive of the home directory to the home directory of user root.
+# 11. Type rm -f *gz *tar to remove all files resulting from exercises in this chapter from the home directory of /root.
+
+# sample review questions for spaced repetition
+# 1. Which directory would you go to if you were looking for configuration files?
+# 2. Which command enables you to display a list of current directory contents, with the newest files listed first?
+# 3. Which command enables you to rename the file myfile to yourfile?
+# 4. Which command enables you to wipe an entire directory structure, including all of its contents?
+# 5. How do you create a link to the directory /tmp in your home directory?
+# 6. How would you copy all files that have a name that starts with a, b, or c from the directory /etc to your current directory?
+# 7. Which command enables you to create a link to the directory /etc in your home directory?
+# 8. What is the safe option to remove a symbolic link to a directory?
+# 9. How do you create a compressed archive of the directories /etc and /home and write that archive to /tmp/etchome.tgz?
+# 10. How would you extract the file /etc/passwd from /tmp/etchome.tgz that you have created in the previous step?
+
+# lab
+# 1. Log in and use sudo -i to open a root shell. In the home directory of root, 
+# create one archive file that contains the contents of the /home directory and the /etc directory. 
+# Use the name /root/essentials.tar for the archive file.
+# 2. Copy this archive to the /tmp directory. Also create a hard link to this file in the / directory.
+# 3. Rename the file /essentials.tar to /archive.tar.
+# 4. Create a symbolic link in the home directory of the user root that refers to
+# /archive.tar. Use the name link.tar for the symbolic link.
+# 5. Remove the file /archive.tar and see what happened to the symbolic link.
+# Remove the symbolic link also.
+# 6. Compress the /root/essentials.tar file.
 
 # create a new empty file at a location
 touch /tmp/somevimfile
