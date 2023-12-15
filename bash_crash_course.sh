@@ -1,4 +1,6 @@
 #!/bin/bash
+
+
 # BASIC COMMANDS 
 
 # alias 
@@ -277,6 +279,147 @@ mandb
 # usage in the pinfo page. Read through it and press q when done. Alternatively,
 # you can use the info command, but pinfo shows nicer formatting.
 
+# /usr/share/doc
+# Find info about rsyslog, bind, Kerberos, OpenSSL, and others. 
+# For some services, even sample files are included.
+
+# sample review questions for spaced repetition
+# 1. What is a variable?
+# 2. Which command enables you to find the correct man page based on keyword usage?
+# 3. Which file do you need to change if you want a variable to be set for user bob when this user logs in?
+# 4. When analyzing how to use a command, you read that the documentation is maintained with the Techinfo system. How can you read the information?
+# 5. What is the name of the file where Bash stores its history?
+# 6. Which command enables you to update the database that contains man keywords?
+# 7. How can you undo the last modification you have applied in vim?
+# 8. What can you add to a command to make sure that it does not show an error message, assuming that you do not care about the information that is in the error messages either?
+# 9. How do you read the current contents of the $PATH variable?
+# 10. How do you repeat the last command you used that contains the string dog somewhere in the command?
+
+# lab 1
+# 1. Modify your shell environment so that on every subshell that is started, a variable is set. The name of the variable should be COLOR, and the value should be set to red. 
+# Verify that it is working.
+# 2. Use the appropriate tools to find the command that you can use to change a user password. 
+# Do you need root permissions to use this command?
+# 3. From your home directory, type the command ls -al wergihl * and ensure that errors as well as regular output are redirected to a file with the name /tmp/ lsoutput.
+
+
+# file system
+# Directory       Use
+# /               Specifies the root directory. This is where the file system tree starts.
+# /boot           Contains all files and directories that are needed to boot the Linux kernel.
+# /dev            Contains device files that are used for accessing physical devices. This directory is essential during boot.
+# /etc            Contains configuration files that are used by programs and services on your server. This directory is essential during boot.
+# /home           Used for local user home directories.
+# /media, /mnt    Contain directories that are used for mounting devices in the file system tree.
+# /opt            Used for optional packages that may be installed on your server.
+# /proc           Used by the proc file system. This is a file system structure that gives access to kernel information.
+# /root           Specifies the home directory of the root user.
+# /run            Contains process and user-specific information that has been created since the last boot.
+# /srv            May be used for data by services like NFS, FTP, and HTTP.
+# /sys            Used as an interface to different hardware devices that are managed by the Linux kernel and associated processes.
+# /tmp            Contains temporary files that may be deleted without any warning during boot.
+# /usr            Contains subdirectories with program files, libraries for these program files, and documentation about them.
+# /var            Contains files that may change in size dynamically, such as log files, mail boxes, and spool files.
+
+# mount concept 
+# A mount is a connection between a device and a directory. 
+# A Linux file system is presented as one hierarchy, with the root directory (/) as its starting point. 
+# This hierarchy may be distributed over different devices and even computer systems that are mounted into the root directory.
+# In the process of mounting, a device is connected to a specific directory, such that after a successful mount this directory gives access to the device contents.
+# It's similar to adding another hard disk to a windows device
+
+# mount command
+mount
+# The mount command gives an overview of all mounted devices.
+
+# findmnt
+findmnt
+# The findmnt command shows mounts and the relationship that exists between the different mounts. 
+
+# df 
+df - Th
+# The df -Th command was designed to show available disk space on mounted devices; it includes most of the system mounts. 
+# The -h option summarizes the output of the command in a human-readable way, and the -T option shows which file system type is used on the different mounts.
+# Let's take a look at the output and try to understand it
+
+# Wildcard  Use
+# *         Refers to an unlimited number of any characters. ls *, for instance, shows all files in the current directory (except those that have a name starting with a dot).
+# ?         Used to refer to one specific character that can be any character. ls c?t would match cat as well as cut.
+# [auo]     Refers to one character that may be selected from the range that is specified between square brackets. ls c[auo]t would match cat, cut, and cot.
+
+# exercises folders
+# 1. Open a shell. Type cd. Next, type pwd, which stands for print working directory. 
+# You’ll see that you are currently in your home directory; that is, name /home/<username>.
+# 2. Type touch file1. This command creates an empty file with the name file1 on your server. 
+# Because you currently are in your home directory, you can create any file you want to.
+# 3. Type cd /. This changes the current directory to the root (/) directory. 
+# Type touch file2. You’ll see a “permission denied” message. 
+# Ordinary users can create files only in directories where they have the permissions needed for this.
+# 4. Type cd /tmp. This brings you to the /tmp directory, where all users have write permissions. 
+# Again, type touch file2. 
+# You’ll see that you can create items in the /tmp directory (unless there is already a file2 that is owned by somebody else).
+# 5. Type cd without any arguments. This command brings you back to your home directory.
+# 6. Type mkdir files. This creates a directory with the name files in the current directory. 
+# The mkdir command uses the name of the directory that needs to be created as a relative pathname; it is relative to the position you are currently in.
+# 7. Type mkdir /home/$USER/files. In this command, you are using the variable $USER, which is substituted with your current username. 
+# The complete argument of mkdir is an absolute filename to the files directory that you are trying to create. 
+# Because this directory already exists, you’ll get a “file exists” error message.
+# 8. Type rmdir files to remove the files directory that you have just created. 
+# The rmdir command enables you to remove directories, but it works only if the directory is empty and does not contain any files.
+
+# absolute paths
+# An absolute filename, or absolute pathname, is a complete path reference to the file or directory you want to work with. 
+# This pathname starts with the root directory, followed by all subdirectories up to the actual filename. 
+# No matter what your current directory is, absolute filenames will always work. 
+# An example of an absolute filename is /home/lisa/file1.
+# relative paths
+# A relative filename is relative to the current directory as shown with the pwd command. 
+# It contains only the elements that are required to get from the current directory up to the item you need. 
+# Suppose that your current directory is /home (as shown by the pwd command). 
+# When you refer to the relative filename lisa/file1, you are referring to the absolute filename /home/lisa/file1.
+
+# coppy files from one location to another
+cp /etc/hosts /tmp
+
+# move files from one location to another
+mv myfile /tmp
+
+# multiple commands on the same line
+# create directory
+mkdir somefiles; mv somefiles /tmp
+
+# delete a file or folder
+rm myfile
+rm -r mydir
+
+# exercises
+# 1. Type pwd. You should be in the directory /home/$USER.
+# 2. Type mkdir newfiles oldfiles
+# Type ls
+# You’ll see the two directories you have just created, as well as some other direc-
+# tories that already existed in the user home directory.
+# 3. Type touch newfiles/.hidden; touch newfiles/unhidden
+# This creates two files in the directory newfiles.
+# 4. Type cd oldfiles
+# 5. Type ls -al
+# This shows two items only: ., which refers to the current directory; and .., which
+# refers to the item above this (the parent directory).
+# 6. Type ls -al ../newfiles
+# In this command, you are using a relative pathname to refer to the contents of
+# the /home/$USER/newfiles directory.
+# 7. Use the command cp -a ../newfiles/ . (notice the space between the / and the . at
+# the end of the command).
+# 8. Type ls -a
+# You see that you have created the subdirectory newfiles into the directory oldfiles.
+# 9. Make sure that you are still in /home/$USER/oldfiles, and type rm -rf newfiles
+# 10. Now use the command cp -a ../newfiles/* . (notice the space between the *
+# and .). Type ls -al to see what has been copied now. You’ll see that the hidden file
+# has not been copied.
+# 11. To make sure that you copy hidden files as well as regular files, use cp -a
+# ../newfiles/. .
+# 12. Verify the command worked this time, using ls -al
+# You’ll notice that the hidden files as well as the regular files have been success-
+# fully copied.
 
 
 # create a new empty file at a location
