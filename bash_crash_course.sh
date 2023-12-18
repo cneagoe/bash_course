@@ -559,84 +559,111 @@ tar -xvf /root/etc.tar etc/hosts
 # Remove the symbolic link also.
 # 6. Compress the /root/essentials.tar file.
 
-# create a new empty file at a location
-touch /tmp/somevimfile
-# find : Find a file or directory. 
-# see glob link
-find /tmp -name *vim*
-# touch : create a new file
-touch test.txt
-touch some.yml
-touch some_git.yml
+# common text file tools
 
-# grep : Search in the contents of a file or directory. 
-grep "PATH" *
-grep -Rn "PATH" .
-grep "PATH" * .*
+# Dump the contents of the text file on the screen
+cat /etc/passwd
 
-# find : Search for a file or directory with a certain name or type 
-find . -name "*.txt"
+# Open the text file in a pager for easy reading
+less /etc/passwd
+# you can easily search for specific contents in less using /sometext for a forward search and ?sometext for a backward search
+# Press G to go to the last line in the file.
+# Press q to quit less
 
-# echo : print something
-# > and >> : redirect output of a command 
-echo "some PATH" > test.txt 
-echo "some other PATH" >> test.txt 
+# Show the bottom 5 lines of the text file
+tail -n 5 /etc/passwd
 
-# file permissions
-touch script.sh
-echo '#!/bin/bash' > script.sh
-echo 'echo "hello World"' >> script.sh
-# check permissions
-ll script.sh
-ls -altr script.sh
-# try to execute the script
-./script.sh
-# try to execute the script 
-bash script.sh
-# add the execute permission
-chmod +x script.sh
-# try to execute the script again
-./script.sh
+# Show the top 5 lines of the text file
+head -n 5 /etc/passwd
 
-# remove the script
-rm script.sh
+# Filter specific columns
+# filter out the first field of the /etc/passwd file
+cut -d : -f 1 /etc/passwd
 
-# create your own environment variables
-export IRONMAN=Tony
-echo $IRONMAN
+# Sort content
+du -h | sort -rn
+# Sort a list of files in reverse numeric order
+sort -k3 -t : /etc/passwd
+# Sort by column 3 and ":" separator
 
-# create a local variable
-NAME=value
+# count words
+ps aux | wc
 
-# file paths
-# absolute path example
-ls /home/codio/workspace
-# relative path example
-ls ./workspace
+# regex
+# Regular   Expression Use
+# ^text     Matches line that starts with specified text.
+# text$     Matches line that ends with specified text.
+# .         Wildcard. (Matches any single character.)
+# [abc]     Matches a, b, or c.
+# ?         Extended regular expression that matches zero or one of the preceding character.
+# +         Extended regular expression that matches one or more of the preceding character.
+# *         Matches zero to an infinite number of the previous character.
+# \{2\}     Matches exactly two of the previous character.
+# \{1,3\}   Matches a minimum of one and a maximum of three of the previous character.
+# colou?r   Matches zero or one of the previous character. This makes the previous character optional, which in this example would match both color and colour.
+# (…)       Used to group multiple characters so that the regular expression can be applied to the group.
 
-# sudo (super user do)
-# run current command as root user
-# can be put in front of any command
+# exercise
+# Step 1. Create a text file with the name regex.txt and the following contents:
+# bat
+# boot
+# boat
+# bt
+# Step 2. Use grep 'b.*t' regex.txt to see any line that starts with a b and ends with a t.
+# Step 3. Use grep 'b.+t' regex.txt. You might expect to see only lines that have at least three characters, but you don’t, because you are using an extended
+# regular expression, and without using any additional options, grep doesn’t recognize the extended regular expression.
+# Step 4. Use grep -E 'b.+t' regex.txt. Now you see that the extended regular expression does work as expected. 
 
-# package manager
-# ubuntu apt
+# grep options
+# Option Use
+# -i     Matches upper- and lowercase letters (i.e., not case sensitive).
+# -v     Shows only lines that do not contain the regular expression.
+# -r     Searches files in the current directory and all subdirectories.
+# -e     Searches for lines matching more than one regular expression. Use
+# -e     before each regular expression you want to use.
+# -E     Interprets the search pattern as an extended regular expression.
+# -A     <number> Shows <number> of lines after the matching regular expression.
+# -B     <number> Shows <number> of lines before the matching regular expression.
 
-# update package lists
-apt-get update
+# grep exercises
+# 1. Type grep ' #'/etc/services. This shows that the file /etc/services contains a number of lines that start with the comment sign, #.
+# 2. To view the configuration lines that really matter, type grep -v '^#' /etc/ services. This shows only lines that do not start with a #.
+# 3. Type grep -v '^#' /etc/services -B 5. This shows lines that do not start with a # sign but also the five lines that are directly before each of those lines, which is useful because in the preceding lines you’ll typically find comments on how to use the specific parameters. 
+# However, you’ll also see that many blank lines are displayed.
+# 4. Type grep -v -e '^#' -e '^$'/etc/services. This excludes all blank lines and lines that start with #.
 
-# install software
-apt-get install apache2
+# text processing awk
+awk -F : '{ print $4 }' /etc/passwd
+# show the fourth field from /etc/passwd:
+awk -F : '/user/ { print $4 }' /etc/passwd
+# search the /etc/passwd file for the text user and print the fourth field of any matching line.
 
-# service management
+# text processing sed
+sed -n 5p /etc/passwd
+# print the fifth line from the /etc/passwd file:
+sed -i s/old-text/new-text/g ~/myfile
+# search for the text old-text in ~/myfile and replace all occurrences with the text new-text
+sed -i -e '2d;20,25d' ~/myfile 
+# delete lines 2 and 20 through 25 in the file ~/myfile
 
-# set the service to run at boot time
-systemctl enable apache2
+# sample review questions for spaced repetition
+# 1. Which command enables you to see the results of the ps aux command in a way that you can easily browse up and down in the results?
+# 2. Which command enables you to show the last five lines from ~/samplefile? 
+# 3. Which command do you use if you want to know how many words are in ~/samplefile?
+# 4. After opening command output using tail -f ~/mylogfile, how do you stop showing output?
+# 5. Which grep option do you use to exclude all lines that start with either a # or a ;?
+# 6. Which regular expression do you use to match one or more of the preceding characters?
+# 7. Which grep command enables you to see text as well as TEXT in a file?
+# 8. Which grep command enables you to show all lines starting with PATH, as well as the five lines just before that line?
+# 9. Which sed command do you use to show line 9 from ~/samplefile?
+# 10. Which command enables you to replace all occurrences of the word user with the word users in ~/samplefile?
 
-# start a service
-sudo systemctl start apache2
+# lab 
+# 1. Describe two ways to show line 5 from the /etc/passwd file.
+# 2. How would you locate all text files on your server that contain the current IP address? Do you need a regular expression to do this?
+# 3. You have just used the sed command that replaces all occurrences of the text Administrator with root. Your Windows administrators do not like that very much. How do you revert?
+# 4. Assuming that in the ps aux command the fifth line contains information about memory utilization, how would you process the output of that command to show the process that has the heaviest memory utilization first in the results list?
+# 5. Which command enables you to filter the sixth column of ps aux output?
+# 6. How do you delete the sixth line from the file ~/myfile?
 
-# check service status
-sudo systemctl status apache2
-
-# generate an ssh key
-ssh-keygen -t rsa
+# chapter 5
