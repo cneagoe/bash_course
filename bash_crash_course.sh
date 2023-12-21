@@ -212,6 +212,8 @@ env
 # /etc/bashrc: This file is processed when subshells are started.
 # ~/.bash_profile: In this file, user-specific login shell variables can be defined.
 # ~/.bashrc: In this user-specific file, subshell variables can be defined.
+# to add a path you need to add an export statement similar to the one bellow to one of the files above
+export PATH="/root/.pulumi/bin/:$PATH"
 
 # banners
 # To display messages during the login process, Bash uses the /etc/motd and the /etc/ issue files.
