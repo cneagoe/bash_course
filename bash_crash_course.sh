@@ -668,4 +668,116 @@ sed -i -e '2d;20,25d' ~/myfile
 # 5. Which command enables you to filter the sixth column of ps aux output?
 # 6. How do you delete the sixth line from the file ~/myfile?
 
-# chapter 5
+# reboot server
+systemctl reboot    # or reboot
+systemctl halt      # or halt
+systemctl poweroff  # or poweroff
+
+# remote connectivity ssh
+ssh root@remoteserver # ip or dns can be used for identifying remoteserver
+# To access a server using SSH, you need the sshd server process, as well as an SSH client. 
+# On the remote server that you want to access, the sshd service must be running and offering services,
+# which it does at its default port 22, and it should not be blocked by the firewall. 
+# After installation, Red Hat Enterprise Linux starts the sshd process automatically, 
+# and by default it is not blocked by the firewall.
+
+# These exercises assume that a remote server is available and reachable. 
+# In this exercise, server1 is used as the local server, 
+# and server2 is the remote server on which the sshd process should be up and running.
+
+# exercises
+# 1. Open a root shell on server2. 
+# Type systemctl status sshd. This should show you that the sshd process is currently up and running.
+# 2. Type ip a | grep 'inet '. 
+# (Notice the space between inet and the closing quote mark.) 
+# Notice the IPv4 address your server is currently using. 
+# In the rest of this exercise, it is assumed that server2 is using IP address 192.168.4.220. 
+# Replace that address with the address that you have found here.
+# 3. Open a shell as a nonprivileged user on server1.
+# 4. On server1, type ssh root@192.168.4.220. 
+# This connects to the sshd process on server2 and opens a root shell.
+# 5. Before being prompted for a password, you see a message indicating that the authenticity of
+# host 192.168.4.220 cannot be established. 
+# This message is shown because the host you are connecting to is not yet known on your current host, 
+# which might involve a security risk. Type yes to continue.
+# 6. When prompted, enter the root password. After entering it, you now are logged in to server2.
+# 7. Type w. Notice that the SSH session you have just opened shows as just another pseudo terminal session, 
+# but you’ll see the source IP address in the FROM column.
+# 8. Type exit to close the SSH session.
+
+# coppy files via ssh
+scp /etc/hosts server2:/tmp
+# copy the /etc/hosts file from the local machine to the /tmp directory on server2 using your current user account,
+scp root@server2:/etc/passwd ~
+# connect to server2 as user root to copy the /etc/passwd file to your home directory
+scp -r server2:/etc/ /tmp
+
+# sftp is a secure alternative to scp
+sftp ftpuser@192.168.1.231:/home/ftpuser/new_file1 /home/someuser/new_local_dir
+# sftp {user}@{remote-host}:{remote-file-name} {local-file-name}
+# download from remote
+sftp fx_zzzzz@filex-m1.oclc.org:/xfer/metacoll/in/bib/ <<EOF
+put 1234567.zzzzz.bibs.20200101.mrc
+quit
+EOF
+# sftp {user}@{host}:{remote-path} <<EOF 
+# sftp_commands ...
+# EOF
+# heredoc explained
+# https://tldp.org/LDP/abs/html/here-docs.html
+
+# sftp exercises
+# 1. From a sudo shell, add a line that matches the server2 IP address to the hostname server2.
+# 2. From a terminal, type sftp student@server2. 
+# This gives you access to an SFTP prompt that is opened on server2.
+# 3. Type ls. 
+# You’ll see files in the current working directory on the remote server.
+# 4. Type pwd. 
+# This shows the current directory on the remote server.
+# 5. Type lpwd. 
+# This shows your local current directory.
+# 6. Type lcd /tmp. 
+# This changes the local current directory to /tmp.
+# 7. Type put /etc/hosts. 
+# This file will upload the /etc/hosts file from server1 to the user student home directory on server2.
+# 8. Type exit to close your SFTP session.
+
+# sync files
+rsync -avz /home/karl/ /mnt/usbstore
+# This would recursively transfer all files from the directory src/bar on the machine foo into the /data/tmp/bar directory on the local machine.  
+# The files  are  transferred  in  archive  mode, which  ensures  that  symbolic links, devices, attributes, permissions, ownerships, etc. are preserved in the transfer.  
+# Additionally, compression will be used to reduce the size of data portions of the transfer.
+
+# ssh keys
+# SSH is more secure when using public/private keys for authentication. 
+# This authentication method is normally enabled by default 
+# because it is more secure than password-based authentication. 
+# Only if that is not possible is a password login used. 
+# The only thing you need to do to enable key-based login is to create a key pair; 
+# everything else is organized by default already.
+# When using public/private key-based authentication, 
+# the user who wants to connect to a server generates a public/private key pair. 
+# The private key needs to be kept private and will never be distributed. 
+# The public key is stored in the home directory of the target user on the SSH server in the file .ssh/authorized_keys.
+# When authenticating using key pairs, the user generates a hash derived from the private key. 
+# This hash is sent to the server, 
+# and if on the server it proves to match the public key that is stored on the server, 
+# the user is authenticated.
+
+# ssh key exercises
+# 1. On server 1, type ssh-keygen.
+# 2. When asked for the filename in which to store the (private) key, 
+# accept the default filename ~/.ssh/id_rsa.
+# 3. When asked to enter a passphrase, press Enter twice.
+# 4. The private key now is written to the ~/.ssh/id_rsa file 
+# and the public key is written to the ~/.ssh/id_rsa.pub file.
+# 5. Use ssh-copy-id server2 to copy to server2 the public key you have just created. 
+# You are then asked for the password on the remote server one last time.
+# 6. After copying the public key, verify that it can actually be used for authentication. 
+# To do this, type ssh server2. 
+# You should now authenticate without having to enter the password for the remote user account.
+
+# Lab 
+# 1. Set up SSH-based authentication. From server2, use SSH to connect to server1.
+# 2. Make sure that graphical applications are supported through the SSH session. 
+# Also set up key-based authentication so that no password has to be entered while connecting to the remote server.
