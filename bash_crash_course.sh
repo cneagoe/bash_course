@@ -781,3 +781,275 @@ rsync -avz /home/karl/ /mnt/usbstore
 # 1. Set up SSH-based authentication. From server2, use SSH to connect to server1.
 # 2. Make sure that graphical applications are supported through the SSH session. 
 # Also set up key-based authentication so that no password has to be entered while connecting to the remote server.
+
+# user and group management
+
+# Linux typically has two main types of user accounts: 
+# regular users and the superuser (often called "root"). 
+# Regular users have limited privileges and can perform most tasks but not system-level configurations. 
+# The root user has unrestricted access and can modify system files and settings.
+
+# show user info
+id cip
+# uid=1000(cip) gid=1000(cip) groups=1000(cip),10(wheel)
+
+# switch user
+su root
+# check what the difference is between using "-" in the command or not
+# su - root vs su root
+
+# execute command as root
+sudo ls /root
+
+# add user to wheel group
+usermod -aG wheel user
+
+# edit the sudoers file
+visudo
+# check and make sure the line %wheel ALL=(ALL) ALL is included for access to all admin commands
+# if you included the line linda ALL=/usr/bin/useradd, /usr/bin/passwd in this file, 
+# that would allow user linda to run only the commands useradd and passwd with the sudo command
+
+# While using sudo, you are prompted to enter a password. 
+# Based on this password a token is generated, 
+# it allows you to run new sudo commands without having to enter the password again. 
+# However, this token is valid for only five minutes. 
+# It is possible to extend the lifetime of the token: 
+# include the following in /etc/sudoers (using visudo) to extend the token lifetime to 240 minutes:
+# Defaults timestamp_timeout=240
+
+# allow most admin commands except some
+# include the line bellow in visudo
+# linda ALL=/usr/bin/useradd, /usr/bin/passwd, ! /usr/bin/passwd root
+
+# sudo with pipes
+# get a list of all packages that have the string “ssh” in their name
+sudo sh -c "rpm -qa | grep ssh"
+
+# exercises sudo
+# 1. Type sudo -i to open a sudo root shell. 
+# When prompted for a password, enter the password assigned to user student.
+# 2. Use useradd betty; useradd amy to create two users.
+# 3. Type echo password | passwd --stdin betty; echo password | passwd --stdin amy 
+# to set the password for these two users. Type exit to return to the user student shell.
+# 4. Use su - betty to open a shell as user betty. 
+# When prompted for a password, enter the password you’ve just assigned for user betty.
+# 5. Type sudo ls /root, enter the user betty password and notice the error message.
+# 6. Type exit to return to the shell in which you are user student. 
+# Use whoami to verify the current user ID.
+# 7. Type sudo sh -c 'echo "betty ALL=(ALL) ALL" > /etc/sudoers.d/betty' 
+# to allow full sudo access for betty.
+# 8. Use su - betty to open a shell as betty and enter the password of this user when prompted.
+# 9. Use sudo ls -l /root to verify that sudo access is working. 
+# The /root directory can only be viewed by the root user due to the permissions on that directory.
+# 10. Use sudo sh -c ' echo "amy ALL=/usr/sbin/useradd, /usr/bin/passwd, ! /usr/bin/passwd root" > /etc/sudoers.d/amy' 
+# to allow user amy to create users and reset user passwords, but not for root.
+# 11. Type su - amy and enter user amy’s password when prompted.
+# 12. Use sudo passwd betty to verify that you can change the password as user amy.
+# 13. Use sudo passwd root to verify that changing the root user password is not allowed.
+# 14. Type exit and exit to return to the user student shell. 
+# Use whoami to verify that you’re in the right shell.
+
+# check config file /etc/passwd
+# Username: 
+# This is a unique name for the user. 
+# Usernames are important to match a user to their password, 
+# which is stored separately in /etc/shadow (see next bullet). 
+# On Linux, there can be no spaces in the username, and in general 
+# it’s a good idea to specify usernames in all lowercase letters.
+# Password: 
+# In the old days, the second field of /etc/passwd was used to store the hashed password of the user. 
+# Because the /etc/passwd file is readable by all users, 
+# this poses a security threat, and for that reason 
+# on current Linux systems the hashed passwords are stored in /etc/shadow 
+# UID: 
+# Each user has a unique user ID (UID). This is a numeric ID. 
+# It is the UID that really determines what a user can do. 
+# When permissions are set for a user, the UID (and not the username) is stored in the file metadata. 
+# UID 0 is reserved for root, the unrestricted user account. 
+# The lower UIDs (typically up to 999) are used for system accounts, 
+# and the higher UIDs (from 1000 on by default) are reserved for people who need to connect a directory to the server. 
+# The range of UIDs that are used to create regular user accounts is set in /etc/login.defs.
+# GID: 
+# On Linux, each user is a member of at least one group. 
+# This group is referred to as the primary group, 
+# and this group plays a central role in permissions management
+# Users can be a member of additional groups, which are administered in the file /etc/group.
+# Comment field: 
+# The Comment field, as you can guess, is used to add comments for user accounts. 
+# This field is optional, but it can be used to describe what a user account is created for. 
+# Directory: 
+# This is the initial directory where the user is placed after logging in, also referred to
+# as the home directory. If the user account is used by a person, 
+# this is where the person would store their personal files and programs. 
+# For a system user account, this is the environment where the service can store files it needs while operating.
+# Shell: 
+# This is the program that is started after the user has successfully connected to a server.
+# For most users this will be /bin/bash, the default Linux shell. 
+# For system user accounts, it will typically be a shell like /sbin/nologin. 
+# The /sbin/nologin command is a specific command that silently denies access to users 
+# (to ensure that if by accident an intruder logs in to the server, the intruder cannot get any shell access). 
+# Optionally, you can create an /etc/nologin.txt file, in which case only root will be able to log in 
+# but other users will see the contents of this file when their logins are denied.
+
+# check config file /etc/shadow
+# Login name: 
+# Notice that /etc/shadow does not contain any UIDs, but usernames only. 
+# This opens up a possibility for multiple users using the same UID but different passwords 
+# (which, by the way, is not recommended).
+# Encrypted password: 
+# This field contains all that is needed to store the password in a secure way. 
+# If the field is empty, no password is set and the user cannot log in. 
+# If the field starts with an exclamation mark, login for this account currently is disabled.
+# Days since Jan. 1, 1970, that the password was last changed: 
+# Many things on Linux refer to this date, which on Linux is considered the beginning of time. 
+# It is also referred to as epoch.
+# Days before password may be changed: 
+# This allows system administrators to use a stricter password policy, 
+# where it is not possible to change back to the original password 
+# immediately after a password has been changed. 
+# Typically this field is set to the value 0.
+# Days after which password must be changed: 
+# This field contains the maximal validity period of passwords. 
+# Notice in the last line of Example 6-3 that it is set to 99,999 (about 274 years), which is the default.
+# Days before password is to expire that user is warned: 
+# This field is used to warn a user when a forced password change is upcoming. 
+# Notice in the last line of Example 6-3 that it is set to 7 days, 
+# which is the default (even if the password validity is set to 99,999 days).
+# Days after password expires that account is disabled: 
+# Use this field to enforce a password change. 
+# After password expiry, the user no longer can log in. 
+# After the account has reached the maximum validity period, the account is locked out. 
+# This field allows for a grace period in which the user can change her password, 
+# but only during the login process. 
+# This field is set in days and is unset by default.
+# Days since Jan. 1, 1970, that account is disabled: 
+# An administrator can set this field to disable an account on a specific date. 
+# This is typically a better approach than removing an account, 
+# as all associated properties and files of the account will be kept, 
+# but the account no longer can be used to authenticate on your server. 
+# Note that this field does not have a default value.
+# A reserved field, which was once added “for future use”: 
+# This field was reserved a long time ago; it will probably never be used.
+
+# create a new user
+useradd -m -u 1201 -G sales,ops linda
+# create a user linda who is a member of the secondary groups sales and ops with UID 1201 
+# and add a home directory to the user account as well.
+
+# dissable login
+useradd caroline -s /sbin/nologin 
+# make sure this user will not be allowed to log in.
+
+# check useradd default settings in /etc/default/useradd
+
+# check useradd default settings in /etc/login.defs
+# MOTD_FILE: 
+# Defines the file that is used as the “message of the day” file. 
+# In this file, you can include messages to be displayed after the user has successfully logged in to the server.
+# ENV_PATH: 
+# Defines the $PATH variable, a list of directories that should be searched for executable files after logging in.
+# PASS_MAX_DAYS, PASS_MIN_DAYS, and PASS_WARN_AGE: 
+# Define the default password expiration properties when creating new users.
+# UID_MIN: 
+# Indicates the first UID to use when creating new users.
+# CREATE_HOME: 
+# Indicates whether or not to create a home directory for new users.
+
+# Showing Password Expiry Information
+chage -l
+
+# user settings files
+# /etc/profile: Used for default settings for all users when starting a login shell
+# /etc/bashrc: Used to define defaults for all users when starting a subshell
+# ~/.profile: Specific settings for one user applied when starting a login shell
+# ~/.bashrc: Specific settings for one user applied when starting a subshell
+
+# exercises create users
+# 1. From a sudo shell, type 
+vim /etc/login.defs 
+# to open the configuration file /etc/login.defs 
+# and set the PASS_MAX_DAYS to use the value 99 before you start creating users. 
+# Look for the parameter CREATE_HOME and make sure it is set to “yes.”
+# 2. Use 
+cd /etc/skel 
+# to go to the /etc/skel directory. 
+# Type mkdir fotos and mkdir files to add two default directories to all user home directories. 
+# Also change the contents of the file .bashrc toinclude the line export EDITOR=/usr/bin/vim, 
+# which sets the default editor for tools that need to modify text files.
+# 3. Type useradd linda to create an account for user linda. 
+# Then, type id linda to verify that linda is a member of a group with the name linda and nothing else. 
+# Also verify that the directories Pictures and Documents have been created in user linda’s home directory.
+# 4. Use passwd linda to set a password for the user you have just created. 
+# Use the password : password.
+# 5. Type 
+passwd -n 30 -w 3 -x 90 linda 
+# to change the password properties. 
+# This has the password expire after 90 days (-x 90). 
+# Three days before expiry, the user will get a warning (-w 3), 
+# and the password has to be used for at least 30 days before (-n 30) it can be changed.
+# 6. Create a few more users: 
+# lucy, lori, and bob, using 
+for i in lucy lori bob; do useradd $i; done
+# You may get an error message stating the user already exists. 
+# This message can be safely ignored.
+# 7. Use 
+grep lori /etc/passwd /etc/shadow /etc/group
+# This shows the user lori created in all three critical files and confirms they have been set up correctly.
+
+# check group settings file
+vim /etc/group
+# Group name: 
+# As is suggested by the name of the field, it contains the name of the group.
+# Group password: 
+# Where applicable, this field contains a group password, a feature that is hardly used anymore. 
+# A group password can be used by users who want to join the group on a temporary basis, 
+# so that access to files the group has access to is allowed. 
+# If a group password is used, it is stored in the /etc/gshadow file, 
+# as that file is root accessible only.
+# Group ID: 
+# This field contains a unique numeric group identification number.
+# Members: 
+# Here you find the names of users who are a member of this group as a secondary group. 
+# Note that this field does not show users who are a member of this group as their primary group.
+
+# create group
+groupadd examplegroup
+
+# modify group
+groupmod -n newgroupname oldgroupname
+# change a group name
+
+# exercises group
+# 1. Open a sudo shell and type 
+groupadd sales 
+# followed by 
+groupadd account 
+# to add groups with the names sales and account.
+# 2. Use usermod to add users linda and laura to the group sales, and lori and bob to the sales group account:
+usermod -aG sales linda
+usermod -aG sales lucy
+usermod -aG account lori
+usermod -aG account bob
+id linda
+# 3. Type id linda to verify that user linda has correctly been added to the group sales. 
+# In the results of this command, you see that linda is assigned to a group with the name linda. 
+# This is user linda’s primary group and is indicated with the gid option. 
+# The groups parameter shows all groups user linda currently is a member of, 
+# which includes the primary group as well as the secondary group sales that the user has just been assigned to.
+# uid=1000(linda) gid=1000(linda) groups=1000(linda),1001(sales)
+
+# lab 1
+# Create two groups: sales and account.
+# Create users joana, john, laura, and beatrix. 
+# Make sure they have their primary group set to a private group that has the name of the user.
+# Make joanna and john members of the group sales, and laura and beatrix members of the group account.
+# Set a password policy that requires users to change their password every 90 days.
+
+# lab 2
+# Create a sudo configuration that allows user bill to manage user properties and passwords, 
+# but which does not allow this user to change the password for the root user.
+
+# permissions
+
+
