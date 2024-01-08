@@ -1052,4 +1052,181 @@ id linda
 
 # permissions
 
+# see file perm
+ls -l
 
+# find all files owned by a certain user
+find / -user cip
+
+# find all files owned by a certain group
+find / -group users
+
+# change user owner
+chown linda myfile
+
+# change owner for all underlying files
+chown -R linda /myfolder
+
+# change owner and group
+chown lisa.sales myfile
+chown lisa:sales myfile
+
+# change just group
+chown .sales myfile
+chown :sales myfile
+chgrp account /home/account
+
+# when a user creates a file, default ownership is applied. 
+# The user who creates the file automatically becomes user owner, 
+# and the primary group of that user automatically becomes group owner.
+
+# When user is a part of multiple groups
+# they can select the primary one (default one)
+
+# list default group for user
+groups cip
+
+# change default group for user
+newgrp cip
+
+# Permission  Applied to Files            Applied to Directories
+# Read        View file content           List contents of directory
+# Write       Change contents of a file   Create and delete files and subdirectories
+# Execute     Run a program file          Change to the directory
+
+# Permission  Numeric Representation
+# Read        4
+# Write       2
+# Execute     1
+
+# change permission to a file
+chmod 755 /somefile
+# umask version
+chmod +x somefile
+# +-rwx version
+chmod g+w,o-r somefile
+# u user, g group, o other, a all, +-rwx version
+
+# check diff between the two commands bellow
+chmod -R a+X /dir
+chmod -R a+x /dir
+# This ensures that subdirectories will obtain the execute permission 
+# but the execute permission is not applied to any files.
+
+# exercises
+# 1. From a root shell, type mkdir -p /data/sales /data/account.
+# 2. Before setting the permissions, change the owners of these directories 
+# using chown linda.sales /data/sales and chown linda.account /data/account.
+# 3. Set the permissions to enable the user and group owners to write files to these directories, 
+# and deny all access for all others: chmod 770 /data/sales, and next chmod 770 /data/account.
+# 4. Use su - laura to become user laura and change into the directory /data/account. 
+# Use touch emptyfile to create a file in this directory. Does this work? Type groups to figure out why.
+# 5. Still as user laura, use cd /data/sales and use touch emptyfile to create a file in this directory. 
+# Does this work? Type groups to figure out why.
+
+# the set used id SUID permission
+# check perm for file containing passwords
+ls -l /etc/shadow
+# no perms
+ls -l /usr/bin/passwd
+# You can see the SUID permission as an s at the position 
+# where normally you would expect to see the x for the user permissions 
+# (the lowercase s means that both SUID and execute are set, 
+# an uppercase S would mean that only SUID is set)
+# when a user is changing their password, 
+# the user temporarily has root permissions 
+# because the /usr/bin/passwd utility is owned by the root user,
+
+#The second special permission is set group ID (SGID). 
+# This permission has two effects. 
+# If applied on an executable file, 
+# it gives the user who executes the file the permissions of the group owner of that file. 
+# So, SGID can accomplish more or less the same thing that SUID does. 
+# For this purpose, however, SGID is hardly used. 
+# As is the case for the SUID permission, SGID is applied to some system files as a default setting.
+ls -ld account
+# example SGID
+
+# The third of the special permissions is sticky bit. This permission is useful to protect files against
+# accidental deletion in an environment where multiple users have write permissions in the same
+# directory. If sticky bit is applied, a user may delete a file only if they are the user owner of the file
+# or of the directory that contains the file. It is for that reason that sticky bit is applied as a default
+# permission to the /tmp directory, and it can be useful on shared group directories as well.
+
+# When using ls -l, you can see sticky bit as a T at the position where you normally see the execute
+# permission for others (a lowercase t indicates that sticky bit as well as the execute permission for
+# the others entity are set, whereas uppercase T indicates that only sticky bit is set):
+ls -ld account/
+# example sticky bit
+
+# apply SUID
+chmod u+s
+# apply SGID
+use chmod g+s
+# apply sticky bit 
+use chmod +t
+
+# exercises
+# 1. Use su - linda to open a terminal in which you are user linda.
+# 2. Use cd /data/sales to go to the sales directory. 
+# Use touch linda1 and touch linda2 to create two files of which linda is the owner.
+# 3. Use su - laura to switch the current user identity to user laura, 
+# who also is a member of the sales group.
+# 4. Use cd /data/sales again, and from that directory, 
+# use ls -l. You’ll see the two files that were created by user linda 
+# that are group-owned by the group linda. 
+# Use rm -f linda*. This will remove both files.
+# 5. Use the commands touch laura1 laura2 to create two files that are owned by user laura.
+# 6. Use su - to escalate your current permissions to root level.
+# 7. Use chmod g+s,o+t /data/sales to set the group ID bit 
+# as well as sticky bit on the shared group directory.
+# 8. Use su - linda and type cd /data/sales. First, use touch linda3 linda4. 
+# You should now see that the two files you have created are owned by the group sales, 
+# which is group owner of the directory /data/sales.
+# 9. Use rm -rd laura*. Normally, sticky bit prevents you from doing so, 
+# but because user linda is the owner of the directory that contains the files, 
+# you are allowed to do it anyway!
+
+# optional
+# An alternative method of securing files on a Linux server is by working with attributes. 
+# Attributes do their work regardless of the user who accesses the file.
+
+# A     This attribute ensures that the file access time of the file is not modified. Normally, every
+#       time a file is opened, the file access time must be written to the file’s metadata. This affects
+#       performance in a negative way; therefore, on files that are accessed on a regular basis, the A
+#       attribute can be used to disable this feature.
+# a     This attribute allows a file to be added to but not to be removed.
+# c     If you are using a file system where volume-level compression is supported, this file attribute
+#       makes sure that the file is compressed the first time the compression engine becomes active.
+# D     This attribute makes sure that changes to files are written to disk immediately, and not to
+#       cache first. This is a useful attribute on important database files to make sure that they do not
+#       get lost between file cache and hard disk.
+# d     This attribute makes sure the file is not backed up in backups where the legacy dump utility
+#       is used.
+# I     This attribute enables indexing for the directory where it is enabled.
+# i     This attribute makes the file immutable. Therefore, no changes can be made to the file at all,
+#       which is useful for files that need a bit of extra protection.
+# s     This attribute overwrites the blocks where the file was stored with 0s after the file has been
+#       deleted. This makes sure that recovery of the file is not possible after it has been deleted.
+# u     This attribute saves undelete information. This allows a utility to be developed that works
+#       with that information to salvage deleted files.
+
+# exercises
+# 1. Open a root shell.
+# 2. Create a file named touch /root/myfile3. Set the immutable permission to chattr +i /root/myfile
+# 4. Try to remove the file: rm -f /root/myfile. You can’t!
+# 5. Remove the attribute again: chattr -i /root/myfile
+# To get an overview of all attributes that are currently applied, use the lsattr command.
+
+# lab
+# 1. Set up a shared group environment. If you haven’t created these directories in a previous
+# exercise yet, create two directories: /data/account and /data/sales. Make the group sales the
+# owner of the directory sales, and make the group account the owner of the directory account.
+# 2. Configure the permissions so that the user owner (which must be root) and group owner have
+# full access to the directory. There should be no permissions assigned to the others entity.
+# 3. Ensure that all new files in both directories inherit the group owner of their respective
+# directory. This means that all files that will be created in /data/sales will be owned by the group
+# sales, and all files in /data/account will be owned by the group account.
+# 4. Ensure that users are only allowed to remove files of which they are the owner.
+
+# chap 8
