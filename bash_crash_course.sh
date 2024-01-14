@@ -1229,4 +1229,417 @@ use chmod +t
 # sales, and all files in /data/account will be owned by the group account.
 # 4. Ensure that users are only allowed to remove files of which they are the owner.
 
-# chap 8
+# networking
+
+# aditional resources
+# https://iximiuz.com/en/posts/computer-networking-101/?utm_medium=reddit&utm_source=r_programming
+
+# https://www.hacker101.com/
+# https://www.hackerone.com/
+
+# IPv4 addresses: 
+# These are based on 32-bit addresses and have four octets, separated by dots, such as 192.168.10.100.
+# IPv6 addresses: 
+# These are based on 128-bit addresses and are written in eight groups of hexadecimal numbers that are 16 bits each and separated by colons. 
+# An IPv6 address may look like fe80:badb:abe01:45bc:34ad:1313:6723:8798.
+
+# To know to which network a computer belongs, a subnet mask is used with every IP address. The
+# subnet mask defines which part of the network address indicates the network and which part
+# indicates the node. Subnet masks may be written in the Classless Inter-Domain Routing (CIDR)
+# notation, which indicates the number of bits in the subnet mask, or in the classical notation, and
+# they always need to be specified with the network address. Examples include 192.168.10.100/24
+# (CIDR notation), which indicates that a 24-bit network address is used, and
+# 192.168.10.100/255.255.255.0 (classical notation), which indicates exactly the same.
+
+# Often, network masks use multiple bytes. In the example using 192.168.10.100/24, the first 3 bytes
+# (the 192.168.10 part) form the network part, and the last byte (the number 100) is the host part on
+# that network.
+
+# In IPv4 networks, there is also always a broadcast address. This is the address that can be used to
+# address all nodes in the network. In the broadcast address, all node bits are set to 1, which makes
+# for the decimal number 255 if an entire byte is referred to. So in the example of the address
+# 192.168.10.100/24, the broadcast address is 192.168.10.255.
+# sample subnet mask /27 = 11111111.11111111.11111111.11100000
+# sample ip address  212.209.113.33 = 11010100.11010001.00001010.00100001
+
+# binary   decimal
+# 00000000 0
+# 00100000 32
+# 01000000 64
+# 01100000 96
+# 10000000 128
+# 10100000 160
+# 11000000 192
+# 11100000 224
+
+# Each network card also has a 12-byte MAC address.
+# MAC addresses are for use on the local network (that is, the local physical network or local WLAN,
+# just up to the first router that is encountered); they cannot be used for communications between
+# nodes that are on different networks.
+# An example of a MAC address is 00:0c:29:7d:9b:17. Notice that each MAC address consists of two
+# parts. The first 6 bytes is the vendor ID, and the second 6 bytes is the unique node ID. Vendor IDs
+# are registered, and by using registered vendor IDs, it is possible to allocate unique MAC addresses.
+
+# To identify services, port addresses are used. Every service has a specific port address, such as port 80 for
+# Hypertext Transfer Protocol (HTTP) or port 22 for a Secure Shell (SSH) server, and in network
+# communication, the sender and the receiver are using port addresses. So, there is a destination
+# port address as well as a source port address involved in network communications.
+
+# Because not all services are addressed in a similar way, a specific protocol is used between the IP
+# address and the port address, such as Transfer Control Protocol (TCP), User Datagram Protocol
+# (UDP), or Internet Control Message Protocol (ICMP) (ping uses this). Every protocol has specific properties: TCP is
+# typically used when the network communication must be reliable and delivery must be guaranteed;
+# UDP is used when it must be fast and guaranteed delivery is not necessary.
+
+# old school video on how the internet works
+# https://www.youtube.com/watch?v=hymzoUpM0K0
+
+# osi model layers of protocols of the internet
+# https://en.wikipedia.org/wiki/OSI_model
+
+# network adress translation
+# go to https://www.whatismyip.com/
+# check output of command bellow
+ip addr
+# NAT is being used by the isp router by default usualy
+
+# DO NOT USE ifconfig any more, it's obsolete on rhel 9
+# use ip instead
+
+
+# localhost / loopback
+# The loopback interface is used for communication between processes. Some processes use the IP
+# protocol for internal communications. For that reason, you’ll always find a loopback interface, and
+# the IP address of the loopback interface is always set to 127.0.0.1.
+
+# Every network has, at least, a default router (also called the default gateway) that is set, 
+# and you can see which router is used as the default router
+ip route show
+# the first line shows that the default route goes through IP address 192.168.4.2, 
+# and also shows that network interface ens33 is used by this address
+# and that dhcp(dynamic host configuration protocol) is used (ip is assigned dinamically)
+
+# To verify availability of ports on your server, 
+# you can use the netstat command or the newer ss command, 
+# which provides the same functionality.
+# Display All Listening Ports on the Local System
+ss -lt
+
+# exercises (config changes done via ip command are not permanent but for safety you may 
+# want to use a vm to experiment with network settings)
+# 1. Open a root shell to your server and type ip addr show. This shows the current network
+# configuration. Note the IPv4 address that is used and the network device names that are used;
+# you need these later in this exercise.
+# 2. Type ip route show to verify routing configuration.
+# 3. If your computer is connected to the Internet, you can now use the ping command to verify the
+# connection to the Internet is working properly. Type ping -c 4 8.8.8.8, for instance, to send
+# four packets to IP address 8.8.8.8. If your Internet connection is up and running, you should
+# get “echo reply” answers.
+# 4. Type ip addr add 10.0.0.10/24 dev <yourdevicename>. This will temporarily set a new IP
+# address.5. Type ip addr show. You’ll see the newly set IP address, in addition to the IP address that was
+# already in use.
+# 6. Type ifconfig. Notice that you do not see the newly set IP address (and there are no options
+# with the ifconfig command that allow you to see it). This is one example of why you should not
+# use the ifconfig command anymore.
+# 7. Type ss -tul. You’ll now see a list of all UDP and TCP ports that are listening on your server.
+
+# networking on RHEL 9 is managed by the NetworkManager service. 
+# You can use : 
+systemctl status NetworkManager 
+# to verify its current status
+# When NetworkManager comes up, it reads the network card configuration scripts, which are in
+# /etc/NetworkManager/system-connections and have a name that starts with the name of the
+# network interface the configuration applies to, like ens160.nmconnection.
+
+# device vs config
+# A device is a network interface card.
+# A connection is the configuration that is used on a device.
+
+# nmcli vs nmtui
+# nmcli tool is cool and very powerful, but it’s not the easiest tool available. To
+# change network configurations fast and efficiently, you should use the menu-driven
+# nmtui utility. It may not be as cool as nmcli, but it allows you to do what you need to
+# do in less than a minute,
+
+# To check your user's current permissions, use :
+nmcli general permissions
+
+# see all connections
+nmcli con show
+
+# see connection details
+nmcli con show name-of-connection
+
+# check docs about these settings
+man 5 nm-settings
+
+# see all devices
+nmcli dev status
+
+# see details about a device
+nmcli dev show name-of-device
+
+# use double tap tab to use autocompletion for building commands easier
+
+# Run these exercises from a console session, not using an SSH connection.
+# 1. Create a new network connection by typing nmcli con add con-name dhcp type ethernet
+# ifname ens33 ipv4.method auto.
+# 2. Create a connection with the name static to define a static IP address and gateway: nmcli con
+# add con-name static ifname ens33 autoconnect no type ethernet ip4 10.0.0.10/24 gw4
+# 10.0.0.1 ipv4.method manual. The gateway might not exist in your configuration, but that
+# does not matter.
+# 3. Type nmcli con show to show the connections, and use nmcli con up static to activate the
+# static connection. Switch back to the DHCP connection using nmcli con up dhcp.
+
+# more exercises
+# 1. Make sure that the static connection does not connect automatically by using nmcli con mod
+# static connection.autoconnect no.
+# 2. Add a DNS server to the static connection by using nmcli con mod static ipv4.dns
+# 10.0.0.10. Notice that while adding a network connection, you use ip4, but while modifying
+# parameters for an existing connection, you often use ipv4 instead. This is not a typo; it is just
+# how it works.
+# 3. To add a second item for the same parameters, use a + sign. Test this by adding a second DNS
+# server, using nmcli con mod static +ipv4.dns 8.8.8.8.
+# 4. Using nmcli con mod, you can also change parameters such as the existing IP address. Try
+# this by using nmcli con mod static ipv4.addresses 10.0.0.100/24.
+# 5. And to add a second IP address, you use the + sign again: nmcli con mod static
+# +ipv4.addresses 10.20.30.40/16.
+# 6. After changing connection properties, you need to activate them. To do that, you can use nmcli
+# con up static.
+
+# Every connection that you create is stored as a configuration file in the directory
+# /etc/NetworkManager/system-connections.
+# In previous versions of RHEL, network connections were stored in the /etc/sysconfig/network-
+# scripts directory. If NetworkManager finds legacy connection scripts in this directory, they will still
+# be used, but NetworkManager connection scripts are no longer stored by default at this location.
+
+# There are different ways to change the hostname:
+# Use nmtui and select the option Change Hostname.
+# Use hostnamectl set-hostname.
+# Edit the contents of the configuration file /etc/hostname.
+# To configure the hostname with hostnamectl, you can use a command like hostnamectl set-
+# hostname myhost.example.com. After setting the hostname, you can use : 
+hostnamectl status 
+# to show the current hostname.
+
+# dns
+# The NetworkManager configuration stores the DNS information in the configuration file for the network
+# connection, which is in /etc/sysconfig/network-scripts, and from there pushes the configuration to
+# the /etc/resolv.conf file, which is used for DNS name server resolving. Do not edit /etc/resolv.conf
+# directly, as it will be overwritten the next time you restart NetworkManager.
+
+# Use nmtui to set the DNS name servers. 
+# Use 8.8.8.8 and 8.8.4.4
+# Use : 
+nmcli con mod <connection-id> [+]ipv4.dns <ip-of-dns>.
+
+# Notice that if your computer is configured to get the network configuration from a DHCP server,
+# the DNS server is also set via the DHCP server. If you do not want this to happen, 
+# use the following command: 
+nmcli con mod <con-name> ipv4.ignore-auto-dns yes
+
+# sample review questions for spaced repetition
+# 1. What is the network address in the address 213.214.215.99/29?
+# 2. Which command only shows link status and not the IP address?3. You have manually edited the /etc/resolv.conf file to include DNS servers. After a restart your
+# modifications have disappeared. What is happening?
+# 4. Which file contains the hostname in RHEL 9?
+# 5. Which command enables you to set the hostname in an easy way?
+# 6. Where does NetworkManager store the configuration that it generates?
+# 7. Which configuration file can you change to enable hostname resolution for a specific IP address?
+# 8. Is a non-administrator user allowed to change NetworkManager connections?
+# 9. How do you verify the current status of the NetworkManager service?
+# 10. Which command enables you to change the current IP address and default gateway on your
+# network connection?
+
+# lab
+# 1. Set up the first server to use the FQDN (fully qualified domain name) server1.example.com 
+# (host name (server1) + domain name (example.com)) 
+# Set up the second server to use server2.example.com.
+# 2. On server1.example.com, use nmtui and configure your primary network card to automatically
+# get an IP address through DHCP. Also set a fixed IP address to 192.168.4.210. On server2, set
+# the fixed IP address to 192.168.4.220.
+# 3. Make sure that from server1 you can ping server2, and vice versa.
+# 4. To allow you to access servers on the Internet, make sure that your local DHCP server provides
+# the default router and DNS servers.
+
+# software
+
+# Software on Red Hat Enterprise Linux is provided in the Red Hat Package Manager (RPM) format. 
+# This is a specific format used to archive the package and provide package metadata as well.
+
+# a repository is an installation source that contains installable packages and an index that contains
+# information about the installable packages so that the installation program dnf can compare the
+# version of packages currently installed with the version of packages available in the repository.
+
+# list all repos
+dnf repolist 
+# can be used with enabled and dissabled option as well
+# crb may be dissabled by default if you're on stream centos 9
+
+# add a repo 
+dnf config-manager --add-repo=http://reposerver.example.com/BaseOS
+# you need to edit the repository file in /etc/yum.conf.d after adding it, 
+# so that it includes the line gpgcheck=0.
+# code /etc/yum.repos.d
+
+# To secure packages in a repository, these packages are often signed with a GPG key. This makes it
+# possible to check whether packages have been changed since the owner of the repository provided
+# them. The GPG key used to sign the software packages is typically made available through the
+# repository as well. The users of the repository can download that key and store it locally so that the
+# package signature check can be performed automatically each time a package is downloaded from
+# the repository.
+
+# create your own repo
+# 1. Insert the installation disk in your virtual machine and make sure it is attached and available.
+# 2. Open a root shell and type mkdir /repo so that you have a mount point where you can mount
+# the ISO file.
+# 3. Add the following line to the end of the /etc/fstab configuration file: /dev/sr0 /repo iso9660
+# defaults 0 0
+# 4. Type mount -a, followed by mount | grep sr0. You should now see that the optical device is
+# mounted on the directory /repo. At this point, the directory /repo can be used as a repository.5. Now, two subdirectories are available through the /repo directory. The BaseOS repository
+# provides access to the base packages, and the Application Stream (AppStream) repository
+# provides access to application streams (these repositories are described in more detail in the
+# “Managing Package Module Streams” section later in this chapter). To make them accessible,
+# you need to add two files to the /etc/yum.repos.d directory. Start with the file BaseOS.repo. You
+# can generate this file using dnf config-manager --add-repo=file:///repo/BaseOS
+# 6. Add the file /etc/yum.repos.d/AppStream.repo using the following command: dnf config-
+# manager --add-repo=file:///repo/AppStream
+# 7. Type ls /etc/yum.repos.d/. This will show you two new files: repo_BaseOS.repo and
+# repo_AppStream.repo. Add the following line to the end of both files: gpgcheck=0
+# 8. Type dnf repolist to verify the availability of the newly created repository. It should show the
+# name of both repositories, including the number of packages offered through this repository
+# (see Example 9-3). Notice that if you’re doing this on RHEL, you’ll also see a message that this
+# system is not registered with an entitlement server. You can safely ignore that message.
+
+# search for a package
+dnf search user
+
+# get more details about a package
+dnf info nmap
+
+# install a package
+dnf install nmap
+
+# uninstall a package
+dnf remove nmap
+
+# see installed packages
+dnf list
+
+# update a package
+dnf update package-name
+
+# To make it easier to manage specific functionality, instead of specific packages, you can work with package groups as well.
+# see installed package groups
+dnf group list
+# used dnf group list hidden to see all
+
+# see more info about groups
+dnf group info
+
+# see dnf history
+dnf history
+
+# exercises dnf
+# 1. Type dnf repolist to show a list of the current repositories that your system is using.
+# 2. Type dnf search seinfo. This will give no matching result.
+# 3. Type dnf provides seinfo. The command shows that the setools-console-<version> package
+# contains this file.
+# 4. Install this package using dnf install -y setools-console. Depending on your current
+# configuration, you might notice that quite a few dependencies have to be installed also.
+# 5. Type dnf list setools-console. You see that the package is listed as installed.
+# 6. Type dnf history and note the number of the last dnf command you used.
+# 7. Type dnf history undo <nn> (where <nn> is replaced with the number that you found in
+# step 6). This undoes the last action, so it removes the package you just installed.
+# 8. Repeat the dnf list setools-console command. The package is now listed as available but not
+# as installed.
+
+# A module describes a set of RPM packages that belong together, and adds features to package management. 
+# Typically, modules are organized around a specific version of an application, 
+# and in a module you’ll find module packages, together with all of the dependencies for that specific version.
+
+# A stream contains one specific version, and updates are provided for a specific stream. 
+# By using streams, different versions of packages can be offered through the same repositories. 
+# When you’re working with modules that have different streams, only one stream can be enabled at the same time. 
+# This allows users to select the package version that is needed in their environment.
+
+# A profile is a list of packages that are installed together for a particular use case. 
+# You may find, for instance, a minimal profile, a default profile, a # server profile, and many more. 
+# While you’re working with modules, you may select which profile you want to use.
+
+# list modules
+dnf module list
+
+# list streams for a module
+dnf module list maven
+
+# see more profile info
+dnf module info php
+
+# If you want to work with a different version, you should start by enabling the corresponding module stream. 
+dnf module enable php:8.1
+
+# If you are now on php:8.1 and you want to change to php:8.2 you use : 
+dnf module install php:8.2. 
+# This will disable the old stream and enable the new stream.
+# After doing this, to ensure that all dependent packages that are not in the module itself are updated as well, type :
+dnf distro-sync 
+
+# rpm vs dnf
+# On your system, two package databases are maintained: the dnf database and the RPM
+# database. When you are installing packages through dnf, the dnf database is updated
+# first, after which the updated information is synchronized to the RPM database. If you
+# install packages using the rpm command, the update is written to the RPM database
+# only and will not be updated to the dnf database, which is an important reason not to
+# use the rpm command to install software packages.
+
+# exercises rpm
+# 1. To practice working with rpm, we need a package. It doesn’t really matter which package that
+# is. Type dnf install -y dnsmasq (you may get a message that the package is already installed).
+# 2. Type which dnsmasq. This command gives the complete pathname of the dnsmasq
+# command.
+# 3. Type rpm -qf $(which dnsmasq). This does an RPM file query on the result of the which dnsmasq command
+# 4. Now that you know that the dnsmasq binary comes from the dnsmasq package, use rpm -qi
+# dnsmasq to show more information about the package.
+# 5. The information that is shown with rpm -qi is useful, but it does not give the details that are
+# needed to start working with the software in the package. Use rpm -ql dnsmasq to show a list
+# of all files in the package.
+# 6. Use rpm -qd dnsmasq to show the available documentation. Notice that this command
+# reveals that there is a man page, but there is also a doc.html file and a setup.html file in the
+# /usr/share/doc/dnsmasq-version directory. Open these files with your browser to get more
+# information about the use of dnsmasq.
+# 7. Type rpm -qc dnsmasq to see which configuration files are used by dnsmasq.
+# 8. After installation, it does not make much sense, but it is always good to know which scripts are
+# executed when a package is installed. Use rpm -q --scripts dnsmasq to show the script code
+# that can be executed from this RPM.
+
+# sample review questions for spaced repetition
+# 1. You have a directory containing a collection of RPM packages and want to make that directory a
+# repository. Which command enables you to do that?
+# 2. What needs to be in the repository file to point to a repository on http://server.example.com/repo?
+# 3. You have just configured a new repository to be used on your RHEL computer. Which command
+# enables you to verify that the repository is indeed available?
+# 4. Which command enables you to search the RPM package containing the file useradd?5. Which two commands do you need to use to show the name of the dnf group that contains security
+# tools and shows what is in that group?
+# 6. Which command do you use to ensure that all PHP-related packages are going to be installed using
+# the older version 7.1, without actually installing anything yet?
+# 7. You want to make sure that an RPM package that you have downloaded does not contain any
+# dangerous script code. Which command enables you to do so?
+# 8. Which command reveals all documentation in an RPM package?
+# 9. Which command shows the RPM package a file comes from?
+# 10. Which command enables you to query software from the repository?
+
+# lab
+# 1. Copy some RPM files from the installation disk to the /myrepo directory. Make this directory a
+# repository and make sure that your server is using this repository.
+# 2. List the repositories currently in use on your server.
+# 3. Search for the package that contains the cache-only DNS name server. Do not install it yet.
+# 4. Perform an extensive query of the package so that you know before you install it which files it
+# contains, which dependencies it has, and where to find the documentation and configuration.
+# 5. Check whether the RPM package contains any scripts. You may download it, but you may not
+# install it yet; you want to know which scripts are in a package before actually installing it,
+# right?
+# 6. Install the package you found in step 3.
+# 7. Undo the installation.
+
+ch 10
