@@ -1905,3 +1905,122 @@ ps aux | grep defunct
 # The issue with zombies is that you cannot kill them in the way that works for normal processes. 
 # Rebooting your system is a solution, but doing so is a bit too much for processes that aren’t really causing any harm. 
 # Fortunately, in recent RHEL systems you can often—not in all cases—get rid of zombies by applying the following procedure:
+
+# 1. use 
+./zombie 
+# to start the demo zombie process.
+# Use ps aux | grep zombie to verify the zombie is running. 
+# You should see two processes, one being the parent that is responsible for the zombie, the other one being the zombie itself.
+# Use 
+kill <childpid>
+# in which <childpid> is replaced with the actual PID of the child processes you’ve found previously. Notice that this fails.
+# use 
+kill -SIGCHLD <parentpid>
+# This will tell the parent process to remove its child processes. 
+# Now the zombie will get adopted by systemd, and after a few seconds it will be removed.
+
+# top status
+# Running (R) The process is currently active and using CPU time, or in the queue of runnable processes waiting to get services.
+# Sleeping (S) The process is waiting for an event to complete.
+# Uninterruptible sleep (D) The process is in a sleep state that cannot be stopped. 
+# This usually happens while a process is waiting for I/O. 
+# This state is also known as blocking state.
+# Stopped (T) The process has been stopped, which typically has happened to an interactive shell process, using the Ctrl-Z key sequence.
+# Zombie (Z) The process has been stopped but could not be removed by its parent, which has put it in an unmanageable state.
+
+# To kill a process from top, type k 
+# top then prompts for the PID of the process you want to send a signal to. 
+# By default, the most active process is selected. 
+# After you enter the PID, top asks which signal you want to send. 
+# By default, signal 15 for SIGTERM is used. However, if you want to insist on a bit more, 
+# you can type 9 for SIGKILL. 
+# Now press Enter to terminate the process.
+
+# To renice a running process from top, type r.
+# You are first prompted for the PID of the process you want to renice. 
+# After entering the PID, you are prompted for the nice value you want to use. 
+# Enter a positive value to decrease process priority or a negative value to increase process priority.
+
+# The load average is expressed as the number of processes that are in a runnable state (R) or in a blocking state (D). 
+# Processes are in a runnable state if they currently are running, or waiting to be serviced. 
+# Processes are in a blocking state if they are waiting for I/O.
+# The load average is shown for the last 1, 5, and 15 minutes, 
+# and you can see the current values in the upper-right corner of the top screen. 
+
+# load average statistics
+uptime
+# As a rule of thumb, the load average should not be higher than the number of CPU cores in your system.
+
+# see number of cpu
+lscpu
+
+# RHEL 9 comes with tuned. 
+# It offers a daemon that monitors system activity and provides some profiles.
+# In the profiles, an administrator can automatically tune a system for best possible latency, throughput, or power consumption.
+# Based on the properties of an installed system, a tuned profile is selected automatically at installation, 
+# and after installation it’s possible to manually change the current profile. 
+# Administrators can also change settings in a tuned profile.
+
+# # tuned profiles
+# balanced 
+# The best compromise between power usage and performance desktop Based on the balanced profile, 
+# but tuned for better response to interactive applications
+# latency-performance 
+# Tuned for maximum throughput # network-latency Based on latency-performance, 
+# but with additional options to reduce network latency
+# network-throughput 
+# Based on throughput-performance, optimizes older CPUs for streaming content
+# powersave 
+# Tunes for maximum power saving 
+# throughput-performance 
+# Tunes for maximum throughput
+# virtual-guest 
+# Optimizes Linux for running as a virtual machine
+# virtual-host 
+# Optimizes Linux for use as a KVM host
+
+# exercises
+# 1. Use 
+dnf -y install tuned 
+# to ensure that tuned is installed.
+# 2. Type 
+systemctl status tuned 
+# to check whether tuned currently is running. 
+# If it is not, use 
+systemctl enable --now tuned
+# 3. Type 
+tuned-adm active 
+# to see which profile currently is used.
+# 4. Type 
+tuned-adm recommend 
+# to see which tuned profile is recommended.
+# 5. To select and activate the throughput-performance profile, type
+tuned-adm profile throughput-performance.
+
+# # sample review questions for spaced repetition
+# 1. Which command gives an overview of all current shell jobs?
+# 2. How do you stop the current shell job to continue running it in the background?
+# 3. Which keystroke combination can you use to cancel the current shell job?
+# 4. A user is asking you to cancel one of the jobs he has started. 
+# You cannot access the shell that user currently is working from. 
+# What can you do to cancel his job anyway?
+# 5. Which command would you use to show parent–child relationships between processes?
+# 6. Which command enables you to change the priority of PID 1234 to a higher priority?
+# 7. On your system, 20 dd processes are currently running. 
+# What is the easiest way to stop all of them?
+# 8. Which command enables you to stop the command with the name mycommand?
+# 9. Which command do you use from top to kill a process?
+# 10. What is required to select a performance profile that best matches your system needs?
+
+# lab 
+# 1. Launch the command 
+dd if=/dev/zero of=/dev/null 
+# three times as a background job.
+# 2. Increase the priority of one of these commands using the 
+nice value -5
+# Change the priority of the same process again, but this time use the value -15.
+# Observe the difference.
+# 3. Kill all the dd processes you just started.
+# 4. Ensure that tuned is installed and active, and set the throughput-performance profile.
+
+# systemd
