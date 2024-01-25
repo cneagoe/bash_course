@@ -1731,3 +1731,177 @@ sleep 7200
 # longer needed in RHEL 9. If a parent process is killed while the child process still is
 # active, the child process becomes a child of systemd instead.
 
+# Tasks on Linux are typically started as processes. One process can start several worker threads. 
+# The threads can be handled by different CPUs or CPU cores available in the machine.
+
+# There are two different types of background processes: kernel threads and daemon processes. 
+# Kernel threads are a part of the Linux kernel, and each of them is started with its own process identification number (PID)
+# Kernel threads cannot be managed. You cannot adjust their priority; neither is it possible to kill them, except by killing the machine.
+
+# short summary of the active processes 
+ps aux | head
+# If used without any arguments, the ps command shows only those processes that have been started by the current user.
+# see the exact command that was used to start the process
+ps -ef
+# shows hierarchical relationships between parent and child processes
+ps fax
+# list all PIDs that have a name containing the string “dd”
+ps aux | grep dd
+pgrep dd
+
+# On modern Linux systems, cgroups are used to allocate system resources. 
+# In cgroups, three system areas, the so-called slices, are defined:
+# system: 
+# This is where all systemd-managed processes are running.
+# user: 
+# This is where all user processes (including root processes) are running.
+# machine: 
+# This os feature is used for virtual machines and containers
+# Within a slice, process priority can be managed by using nice and renice.
+
+# create a service that stresses the machine
+# create a file named stress1.service 
+  # [Unit]
+  # Description=create some stress
+  
+  # [Service]
+  # Type=simple
+  # ExecStart=/usr/bin/dd if=/dev/zero of=/dev/null
+  # CPUShares=1024
+
+# create a service that creates the double amount of stress
+# create a file named stress2.service
+  # [Unit]
+  # Description=create twice as much stress
+  
+  # [Service]
+  # Type=simple
+  # ExecStart=/usr/bin/dd if=/dev/zero of=/dev/null
+  # CPUShares=2048
+
+# move files over in /etc/systemd/system
+# refresh systemctl
+systemctl daemon-reload
+# start stress test
+systemctl start stress1
+systemctl start stress2
+# see how it's going
+top
+# You’ll see that there are two very active dd processes, 
+# which each get about 50 percent of all CPU capacity. 
+# Keep the top screen open.
+
+# Open another terminal, and as a non-root user, type 
+while true; do true; done
+# Observe what is happening in top in the previous terminal. 
+# If you have a single-core system, you will see that both dd processes get 50 percent of all CPU cycles, 
+# and the user bash process that was just started also gets 50 percent of all CPU cycles. 
+# This proves that one very busy user process can have dramatic consequences for the system processes.
+
+# If in the previous step you don’t see the described behavior, type 1 in the top interface. 
+# This will show a line for each CPU core on your system.
+# You should see multiple CPU cores.
+
+# stop previously started processes
+systemctl stop stress1
+systemctl stop stress2
+
+# Changing process priority may make sense in two different scenarios. Suppose, for
+# example, that you are about to start a backup job that does not necessarily have to
+# finish fast. Typically, backup jobs are rather resource intensive, so you might want to
+# start the backup job in a way that does not annoy other users too much, by lowering
+# its priority.
+# Another example is where you are about to start a very important calculation job. To
+# ensure that it is handled as fast as possible, you might want to give it an increased
+# priority, taking away CPU time from other processes.
+
+# Modern Linux kernels differentiate between essential kernel threads that are
+# started as real-time processes and normal user processes. Increasing the priority
+# of a user process will never be able to block out kernel threads or other
+# processes that were started as real-time processes.
+# Modern computers often have multiple CPU cores. A single-threaded process
+# that is running with the highest priority will never be able to get beyond the
+# boundaries of the CPU it is running on.
+# Processes are running in slices, and by default, each slice
+# can claim as many CPU cycles as each other slice.
+
+# When using nice or renice to adjust process priority, you can select from values
+# ranging from –20 to 19. The default niceness of a process is set to 0 (which results
+# in the priority value of 20). By applying a negative niceness, you increase the priority.
+# Use a positive niceness to decrease the priority. It is a good idea not to use the
+# ultimate values immediately. Instead, use increments of 5 and see how it affects the
+# application.
+
+# exercises
+# 1. Run the command : 
+nice -n 5 dd if=/dev/zero of=/dev/null & 
+# to an infinite I/O-intensive job, 
+# but with an adjusted niceness so that some room remains for other processes as well.
+# 2. Use 
+ps aux | grep dd 
+# to find the PID of the dd command that you just started. 
+# The PID is in the second column of the command output.
+# 3. Use 
+renice -n 10 -p 1234 
+# (assuming that 1234 is the PID you just found).
+# 4. Use 
+top 
+# to verify the adjusted process priority and stop the dd process you just started.
+
+# Before you start to think about using the kill command or sending other signals
+# to processes, it is good to know that Linux processes have a hierarchical relationship.
+# Every process has a parent process, and as long as it lives, the parent process is
+# responsible for the child processes it has created. In older versions of Linux, killing a
+# parent process would also kill all of its child processes. In RHEL 9, if you kill a parent
+# process, all of its child processes become children of the systemd process.
+
+# a complete overview of all the available signals
+man 7 signal
+
+# The signal SIGTERM (15) is used to ask a process to stop.
+# The signal SIGKILL (9) is used to force a process to stop.
+# The SIGHUP (1) signal is used to hang up a process. The effect is that the
+# process will reread its configuration files, which makes this a useful signal to
+# use after making modifications to a process configuration file.
+
+# show a list of available signals that can be used with kill
+kill -l
+
+# The pkill command is a bit easier to use because it takes the name 
+# rather than the PID of the process as an argument. 
+# However, it is recommended to use kill, followed by the exact PID of processes you want to stop, 
+# because otherwise you risk terminating processes that didn’t need to be killed anyway.
+
+# exercises
+# 1. Open a root shell. From this shell, type 
+dd if=/dev/zero of=/dev/null &
+# Repeat this command three times.
+# 2. Type 
+ps aux | grep dd
+# This command shows all lines of output that have the letters dd in them; 
+# you will see more than just the dd processes, but that should not really matter. 
+# The processes you just started are listed last.
+# 3. Use the PID of one of the dd processes to adjust the niceness, using renice -n 5 <PID>.
+# 4. Type 
+ps fax | grep -B5 dd
+# The -B5 option shows the matching lines, including the five lines before that. 
+# Because ps fax shows hierarchical relationships between processes, 
+# you should also find the shell and its PID from which all the dd processes were started.
+# 5. Find the PID of the shell from which the dd processes were started and type 
+kill -9 <PID>
+# replacing <PID> with the PID of the shell you just found. 
+# Because the dd processes were started as background processes, 
+# they are not killed when their parent shell is killed. 
+# Instead, they have been moved up and are now children of the systemd process.
+# 6. Use 
+killall 
+# to kill all remaining dd processes. 
+
+# Zombies are processes with a special state. 
+# Zombie processes are processes that have completed execution but are still listed in the process table. 
+# You can check if you have zombies using 
+ps aux | grep defunct
+# Although zombies are harmless, it is annoying to have them, and you may want to do something to clean them up.
+# The issue with zombies is that you cannot kill them in the way that works for normal processes. 
+# Rebooting your system is a solution, but doing so is a bit too much for processes that aren’t really causing any harm. 
+# Fortunately, in recent RHEL systems you can often—not in all cases—get rid of zombies by applying the following procedure:
