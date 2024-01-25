@@ -1642,4 +1642,92 @@ dnf distro-sync
 # 6. Install the package you found in step 3.
 # 7. Undo the installation.
 
-ch 10
+# processes
+
+# When a user types a command, a shell job is started. If no particular measures have been taken,
+# the job is started as a foreground process, occupying the terminal it was started from until it has
+# finished its work. As a Linux administrator, you need to know how to start shell jobs as foreground
+# processes or as background processes and what you can do to manage shell jobs.
+
+# Shell jobs 
+# are commands started from the command line. 
+# They are associated with the shell that was current when the process was started. 
+# Shell jobs are also referred to as interactive processes.
+# Daemons 
+# are processes that provide services.
+# They normally are started when a computer is booted 
+# and often (but certainly not in all cases) run with root privileges.
+# Kernel threads 
+# are a part of the Linux kernel. You cannot manage them using common tools,
+# but for monitoring of performance on a system, it’s important to keep an eye on them.
+
+
+# If you know that a job will take a long time to complete, you can start it with an & behind it.
+# To move the last job that was started in the background back as a foreground job, use the fg command.
+# start a bg job
+while true; do echo tst; sleep 2; done &
+# bring it to foreground
+fg
+# kill it 
+# ctrl + c
+
+# ctrl + c will kill the process if it's started without &
+# start the process with and without the & and try to kill it with ctrl + c
+# use the fg command to bring it back to foreground when its started with & 
+# so you can kill it with ctrl + c
+
+# A job might sometimes have been started that takes (much) longer than predicted. If that happens,
+# you can use Ctrl-Z to temporarily stop the job. This does not remove the job from memory; it just
+# pauses the job so that it can be managed. Once the job is paused, you can continue it as a
+# background job by using the bg command.
+
+# Another key combination is Ctrl-D, which sends the End Of File (EOF) character to the current
+# job. The result is that the job stops waiting for further input so that it can complete what it was
+# currently doing. When Ctrl-C is used, the job is just canceled, and nothing is closed
+# properly. When Ctrl-D is used, the job stops waiting for further input and next terminates, which
+# often is just what is needed to complete in a proper way.
+
+# start a bg job
+while true; do echo tst > /dev/null; sleep 2; done &
+# check what bg jobs are running
+jobs
+# bring the job to foregroud and kill it
+fg
+# ctrl + c
+
+# exercises
+
+# 1. Open a root shell and type the following commands:
+sleep 3600 &
+dd if=/dev/zero of=/dev/null &
+sleep 7200
+# 2. Because you started the last command with no & after the command, you have to wait 2 hours
+# before you get back control of the shell. Press Ctrl-Z to stop the command.
+# 3. Type jobs. You will see the three jobs that you just started. The first two of them have the
+# Running state, and the last job currently is in the Stopped state.
+# 4. Type bg 3 to continue running job 3 in the background. Note that because it was started as the
+# last job, you did not really have to add the number 3.
+# 5. Type fg 1 to move job 1 to the foreground.
+# 6. Press Ctrl-C to cancel job number 1 and type jobs to confirm that it is now gone.
+# 7. Use the same approach to cancel jobs 2 and 3 also.
+# 8. Open a second terminal on your server.
+# 9. From that second terminal, type dd if=/dev/zero of=/dev/null &
+# 10. Type exit to close the second terminal.
+# 11. From the other terminal, start top. You will see that the dd job is still running. It should show
+# on top of the list of running processes. From top, press k to kill the dd job. It will prompt for a
+# PID to kill; make sure to enter the PID of the process you want to terminate, and then press
+# Enter to apply default values.
+
+# When a process is started from a shell, it becomes a child process of that shell. In process
+# management, the parent–child relationship between processes is very important. The parent is
+# needed to manage the child. For that reason, all processes started from a shell are terminated
+# when that shell is stopped. This also offers an easy way to terminate processes no longer needed.
+# Processes started in the background will not be killed when the parent shell from which they were
+# started is killed. To terminate these processes, you need to use the kill command
+
+# In earlier versions of the Bash shell, background processes were also killed when the
+# shell they were started from was terminated. To prevent that, the process could be
+# started with the nohup command in front of it. Using nohup for this purpose is no
+# longer needed in RHEL 9. If a parent process is killed while the child process still is
+# active, the child process becomes a child of systemd instead.
+
