@@ -31,8 +31,6 @@ which man
 ls 
 
 # pwd : Display the path to the current directory.
-# When you add the -W parameter, the command displays the
-# path in the Windows directory structure.
 pwd
 
 # cd : Go to the directory at the specified 
@@ -48,7 +46,7 @@ cd ~
 # $PATH variable.
 # 3. Type time, which shows that time is a shell keyword.
 # 4. Type echo $PATH to show the contents of the $PATH variable. You can
-# see that /usr/bin is included in the list, but because there also is an internal
+# see that /usr/bin is #included in the list, but because there also is an internal
 # command time, the time command from the path will not be executed unless
 # you tell the shell specifically to do so—the command in step 2 has executed the
 # internal command for you because of command precedence.
@@ -105,7 +103,6 @@ history | grep ls
 # view history of commands run so far
 history
 # Type !number to execute a command with a specific number from history.
-# Type !sometext to execute the last command that starts with sometext. 
 # Use history -d number to delete a specific command from history. 
 # type history -c to clear the current history.
 # if you want to remove both the current history and the contents of the .bash_history file,
@@ -145,10 +142,10 @@ history
 # using autocompletion with tab
 # 1. Still from a user shell, type gd and press Tab. You’ll see that nothing happens.
 # 2. Press Tab again. Bash now shows a short list of all commands that start with the
-# letters gd.
+# letters gr.
 # 3. To make it clear to Bash what you want, type i (so that your prompt at this point
-# shows the command gdi). Press Tab again. Bash now completes the command to
-# gdisk. Press Enter to launch it, and press Enter again to close it.
+# shows the command grep). Press Tab again. Bash now completes the command to
+# grep. Press Enter to launch it.
 # 4. Use cd /etc to go to the /etc directory.
 # 5. Type cat ps and press Tab. Because there is one file only that starts with pas, Bash
 # knows what to do and automatically completes the filename to passwd. Press
@@ -177,6 +174,7 @@ history
 # $              Goes to the last position in the current line.
 # !ls            Adds the output of ls (or any other command) in the current file.
 # :%s/old/new/g  Replaces all occurrences of old with new.
+# :set number    adds line numbers
 
 # exercises
 # 1. Type vim ~/testfile. This starts vim and opens a file with the name testfile in ~,
@@ -256,7 +254,7 @@ man ls
 mandb
 
 # exercises
-# 1. Because man -k does not give the expected result, it makes sense to look in the
+# 1. If man -k does not give the expected result, it makes sense to look in the
 # man page for the man command for additional information about man -k. Type
 # man man to open the man page of man. Once in the man page, type /-k to look
 # for a description of the -k option. Type n a few times until you get to the line that
@@ -286,7 +284,7 @@ mandb
 # For some services, even sample files are included.
 
 # sample review questions for spaced repetition
-# 1. What is a variable?
+# 1. What is a linux system variable?
 # 2. Which command enables you to find the correct man page based on keyword usage?
 # 3. Which file do you need to change if you want a variable to be set for user bob when this user logs in?
 # 4. When analyzing how to use a command, you read that the documentation is maintained with the Techinfo system. How can you read the information?
