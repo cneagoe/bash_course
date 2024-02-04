@@ -3071,3 +3071,4 @@ cat /etc/logrotate.conf
 # file /var/log/messages.info.
 # 3. Configure logrotate to keep ten old versions of log files.
 
+# ch14
