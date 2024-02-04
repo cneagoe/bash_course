@@ -2639,3 +2639,435 @@ atq
 # 2. Schedule your machine to be rebooted at 3 a.m. tomorrow morning.
 # 3. Use a systemd timer to start the vsftpd service 
 # five minutes after your system has started.
+
+# system logging
+# three different approaches can be used by services to write log information:
+
+# Systemd-journald: 
+# With the introduction of Systemd, the journald log service
+# systemd-journald has been introduced also. 
+# This service is tightly integrated with Systemd, 
+# which allows administrators to read detailed information from the journal 
+# while monitoring service status using the systemctl status command
+# or the journalctl command. 
+# Systemd-journald is the default solution for logging in RHEL 9.
+
+# Direct write: 
+# Some services write logging information directly to the log files 
+# even some important services such as the Apache web server 
+# and the Samba file server. This approach to logging is not recommended.
+
+# rsyslogd: 
+# rsyslogd is the enhancement of syslogd, 
+# a service that takes care of managing centralized log files. 
+# syslogd has been around for a long time. 
+# Even if systemd-journald is now the default for logging, 
+# rsyslogd provides features not offered by systemd-journald, 
+# and for that reason it is still offered on RHEL 9. 
+# Also, rsyslogd is still configured to work as it did in older versions 
+# of RHEL, which means that you can still use the log files 
+# it generates to get the log information you need.
+
+# On RHEL 9, systemd-journald provides an advanced log management system.
+# This event journal is stored in a binary format,
+# and you can query it by using the journalctl command.
+
+# the journal that is written by systemd-journald is not persistent between reboots
+# messages are also forwarded to the rsyslogd service 
+# which writes the messages to different files in the /var/log directory
+# rsyslogd also offers features that do not exist in journald, 
+# like centralized logging and filtering messages by using modules
+# such as output modules that allow administrators to store messages in a database.
+
+# In RHEL 9 systems, rsyslogd is configured to receive logs from systemd-journald.
+# This setup allows us to use the powerful filtering and forwarding capabilities 
+# of rsyslogd to manage logs collected by systemd-journald. 
+# For example, logs can be forwarded to remote servers for centralized logging 
+# or saved in different formats for compliance or analysis purposes.
+
+# To get more information about what has been happening on a machine 
+# we can take three approaches:
+
+# Use the journalctl command to get more detailed information from the journal.
+
+# Use the systemctl status <unit> command to get a short overview 
+# of the most recent significant events that have been logged by Systemd 
+# units through systemd-journald. 
+# This command shows the status of services, 
+# as well as the most recent log entries that have been written. 
+systemctl status sshd -l
+
+# Monitor the files in /var/log that are written by rsyslogd.
+
+# Log                       File Explanation
+# /var/log/messages         This is the most commonly used log file; 
+#                           it is the generic log file
+#                           where most messages are written to.
+# /var/log/dmesg            Contains kernel log messages.
+# /var/log/secure           Contains authentication-related messages. 
+#                           Look here to see which
+#                           authentication errors have occurred on a server.
+# /var/log/boot.log         Contains messages that are related to system startup.
+# /var/log/audit/audit.log  Contains audit messages. SELinux writes to this file.
+# /var/log/maillog          Contains mail-related messages.
+# /var/log/httpd/           Contains log files that are written 
+#                           by the Apache web server (if it is installed). 
+#                           Notice that Apache writes messages to these files 
+#                           directly and not through rsyslog.
+
+tail -10 /var/log/messages
+# check log messages
+
+# Date and time: 
+# Every log message starts with a timestamp. 
+# For filtering purposes, the timestamp is written as military time.
+
+# Host: 
+# The host the message originated from. 
+# This is relevant because rsyslogd can be configured to handle remote logging.
+
+# Service or process name and PID: 
+# The name of the service or process that generated the message.
+
+# Message content: 
+# The content of the message, which contains the exact message that has been logged.
+
+tail -f /var/log/messages
+# shows in real time which lines are added to the log file.
+
+logger -p kern.err hello
+# writes hello to the kernel facility, for example, using the error priority
+
+# exercises
+# 1. Open a root shell.
+# 2. From the root shell, type 
+tail -f /var/log/messages
+# 3. Open a second terminal window. 
+# In this terminal window, type 
+su - <username> 
+# to open a subshell as another user.
+# 4. Type 
+su - 
+# to open a root shell, but enter the wrong password.
+# 5. Look at the file /var/log/messages. 
+# You see an error message was logged here.
+# 6. From the student shell, type 
+logger hello 
+# You’ll see the message appearing in
+# the /var/log/messages file in real time.
+# 7. In the tail -f terminal, press Ctrl-C to stop tracing the messages file.
+# 8. Type 
+tail -20 /var/log/secure
+# This shows the last 20 lines in /var/log/secure,
+# which also shows the messages that the su - password 
+# errors have generated previously.
+
+# exercises
+# 1. Type 
+journalctl
+# You’ll see the content of the journal since your server last
+# started, starting at the beginning of the journal. 
+# The content is shown in less, so you can use common less commands 
+# to walk through the file.
+# 2. Type q to quit the pager. Now type 
+journalctl --no-pager
+# This shows the contents of the journal without using a pager.
+# 3. Type 
+journalctl -f
+# This opens the live view mode of journalctl, which allows you to see 
+# new messages scrolling by in real time. Press Ctrl-C to interrupt.
+# 4. Type 
+journalctl
+# press the Spacebar, and then press the Tab key twice. 
+# When prompted to view all possibilities, 
+# type y and then press the Enter key. 
+# This shows specific options that can be used for filtering. 
+# Type, for instance,
+journalctl _UID=<your_uuid> 
+# to show messages that have been logged for your user account.
+# 5. Type 
+journalctl -n 20
+# The -n 20 option displays the last 20 lines of the journal
+# (just like tail -n 20).
+# 6. Type 
+journalctl -p err
+# This command shows errors only.
+# 7. If you want to view journal messages 
+# that have been written in a specific time
+# period, you can use the --since and --until commands. 
+# Both options take the time parameter in the format YYYY-MM-DD hh:mm:ss. 
+# Also, you can use yesterday, today, and tomorrow as parameters. 
+# So, type 
+journalctl --since yesterday 
+# to show all messages that have been written since yesterday.
+# 8. journalctl allows you to combine different options, as well. 
+# So, if you want to show all messages with a priority error 
+# that have been written since yesterday, use 
+journalctl --since yesterday -p err
+# 9. If you need as much detail as possible, use 
+journalctl -o verbose
+# This shows different options that are used when writing to the journal 
+# All these options can be used to tell the journalctl command which specific
+# information you are looking for. Type 
+journalctl _SYSTEMD_UNIT=sshd.service 
+# to show more information about the sshd Systemd unit.
+# 10. Type 
+journalctl --dmesg 
+# This shows kernel-related messages only. 
+# Not many people use this command, 
+# as the dmesg command gives the exact same result.
+
+journalctl _SYSTEMD_UNIT=sshd.service -o verbose
+# explore verbose output of the command
+
+# journalctl options
+# Option Use
+# -f     Shows the bottom of the journal and live adds new messages that are
+#        generated
+# -b     Shows the boot log
+# -x     Adds additional explanation to the logged items
+# -u     Used to filter log messages for a specific unit only
+# -p     Allows for filtering of messages with a specific priority
+
+# By default, the journal is stored in the file /run/log/journal. 
+# The entire /run directory is used for current process status information only, 
+# which means that the journal is cleared when the system reboots. 
+# To make the journal persistent between system restarts, 
+# you should create a directory /var/log/journal.
+# Storing the journal permanently requires the Storage=auto parameter in
+# /etc/systemd/journald.conf, which is set by default. 
+# This parameter can have different values:
+
+# Storage=auto        The journal will be written on disk if the directory
+#                     /var/log/journal exists.
+# Storage=volatile    The journal will be stored only in the /run/log/journal
+#                     directory.
+# Storage=persistent  The journal will be stored on disk in the directory
+#                     /var/log/journal. This directory will be created automatically 
+#                     if it doesn’t exist.
+# Storage=none        No data will be stored, 
+#                     but forwarding to other targets such as the kernel log buffer
+#                     or syslog will still work.
+
+# Even when the journal is written to the permanent file in /var/log/journal, 
+# that does not mean that the journal is kept forever. 
+# The journal has built-in log rotation that will be used monthly. 
+# Also, the journal is limited to a maximum size of 10 percent of
+# the size of the file system that it is on, and it will stop growing 
+# if less than 15 percent of the file system is still free. 
+# If that happens, the oldest messages from the journal
+# are dropped automatically to make room for newer messages. 
+# To change these settings, you can modify the file 
+# /etc/systemd/journald.conf
+
+# exercises
+# 1. Open a root shell and type 
+mkdir /var/log/journal
+# 2. Before journald can write the journal to this directory, 
+# you have to set ownership. Type 
+chown root:systemd-journal /var/log/journal
+# followed by 
+chmod 2755 /var/log/journal
+# 3. Use 
+systemctl restart systemd-journal-flush 
+# to reload the new systemdjournald parameters.
+# 4. The Systemd journal is now persistent across reboots.
+
+# you can configure the rsyslogd service through the 
+# /etc/rsyslog.conf file and optional drop-in files in /etc/rsyslog.d. 
+# In the /etc/rsyslog.conf file, 
+# you find different sections that allow you to specify where 
+# and how information should be written.
+
+less /etc/rsyslog.conf
+# view config contents 
+
+# #### MODULES ####: rsyslogd is modular. 
+# Modules are included to enhance the supported features in rsyslogd.
+
+# #### GLOBAL DIRECTIVES ####: T
+# This section is used to specify global parameters, 
+# such as the location where auxiliary files are written 
+# or the default timestamp format.
+
+# #### RULES ####: 
+# This is the most important part of the rsyslog.conf file.
+# It contains the rules that specify what information 
+# should be logged to which destination.
+
+# To specify what information should be logged to which destination, 
+# rsyslogd uses facilities, priorities, and destinations:
+
+# A facility specifies a category of information that is logged. 
+# rsyslogd uses a fixed list of facilities, which cannot be extended. 
+# This is because of backward compatibility with the legacy syslog service.
+
+# A priority is used to define the severity of the message that needs to be logged.
+# When you specify a priority, by default all messages with that priority 
+# and all higher priorities are logged.
+
+# A destination defines where the message should be written. 
+# Typical destinations are files, but rsyslog modules 
+# can be used as a destination as well, to allow further processing 
+# through a rsyslogd module.
+
+# The available facilities and priorities are fixed and cannot be added to.
+# When you specify a destination, a file is often used. 
+# If the filename starts with a hyphen (as in -/var/log/maillog), 
+# the log messages will not be immediately committed to the file 
+# but instead will be buffered to make writes more efficient.
+
+# facilities
+# Facility            Used by
+# auth/authpriv        Messages related to authentication.
+# cron                 Messages generated by the crond service.
+# daemon               Generic facility that can be used for nonspecified daemons.
+# kern                 Kernel messages.
+# lpr                  Messages generated through the legacy lpd print system.
+# mail                 Email-related messages.
+# mark                 Special facility that can be used to write a marker periodically.
+# news                 Messages generated by the NNTP news system.
+# security             Same as auth/authpriv. Should not be used anymore.
+# syslog               Messages generated by the syslog system.
+# user                 Messages generated in user space.
+# uucp                 Messages generated by the legacy UUCP system.
+# local0-7             Messages generated by services that are configured by 
+#                      any of the local0 through local7 facilities.
+
+# The syslog facilities were defined in the 1980s, 
+# and to guarantee backward compatibility,
+# no new facilities can be added. 
+# The result is that some facilities still exist 
+# that basically serve no purpose anymore, 
+# and some services that have become relevant 
+# at a later stage do not have their own facility. 
+# As a solution, two specific facility types can be used. 
+# The daemon facility is a generic facility that can be used by any daemon.
+# In addition, the local0 through local7 facilities can be used.
+
+# If services that do not have their own rsyslogd facility 
+# need to write log messages to a specific log file anyway, 
+# these services can be configured to use any of the local0
+# through local7 facilities. 
+# You next have to configure the services to use these facilities as well. 
+# The procedure you follow to do that is specific to the service you are using.
+# Then you need to add a rule to the rsyslog.conf file 
+# to send messages that come in through that facility to a specific log file.
+
+# To determine which types of messages should be logged, you can use different
+# severities in rsyslog.conf lines. These severities are the syslog priorities.
+
+# priorities
+# Priority         Description
+# debug            Debug messages that will give as much information as possible 
+#                  about service operation.
+# info             Informational messages about normal service operation.
+# notice           Informational messages about items that might become an issue later.
+# warning (warn)   Something is suboptimal, but there is no real error yet.
+# error (err)      A noncritical error has occurred.
+# crit             A critical error has occurred.
+# alert            Message used when the availability of the service is about to be
+#                  discontinued.
+# emerg (panic)    Message generated when the availability of the service 
+#                  is discontinued.
+
+# When a specific priority is used, 
+# all messages with that priority and higher are
+# logged according to the specifications used in that specific rule. 
+# If you need to configure logging in a detailed way, 
+# where messages with different priorities are sent to different files, 
+# you can specify the priority with an equal sign (=) in front of it, 
+# as in the following line, which will write all cron messages 
+# with only the debug priority to a specific file with the name /var/log/cron.debug. 
+# The - in front of the line specifies to buffer writes so that information 
+# is logged in a more efficient way. 
+cron.=debug -/var/log/cron.debug
+
+# the names of rsyslogd facilities and priorities are all listed in 
+man 5 rsyslog.conf
+
+# 1. By default, the Apache service does not log through rsyslog 
+# but keeps its own logging. You are going to change that. To start, type 
+dnf install -y httpd 
+# to ensure that the Apache service is installed.
+# 2. After installing the Apache service, 
+# open its configuration file /etc/httpd/conf/httpd.conf 
+# and verify it has the following line:
+ErrorLog syslog:local1
+# 3. Type 
+systemctl restart httpd
+# 4. Create a line in the /etc/rsyslog.conf file 
+# that will send all messages that it receives for facility local1 
+# (which is now used by the httpd service) to the file /var/log/httpd-error.log 
+# To do this, include the following line in the 
+# #### RULES #### section of the file:
+local1.error /var/log/httpd-error.log
+# 5. Tell rsyslogd to reload its configuration, by using 
+systemctl restart rsyslog
+# 6. All Apache error messages will now be written to the httpd-error.log file.
+# 7. From the Firefox browser, go to http://localhost/index.html. 
+# Because no index.html page exists yet, this will be written to the error log.
+# 8. Create a snap-in file that logs debug messages to a specific file as well. 
+# To do this, type 
+echo "*.debug /var/log/messages-debug" /etc/rsyslog.d/debug.conf
+# 9. Again, restart rsyslogd using 
+systemctl restart rsyslog
+# 10. Use the command 
+tail -f /var/log/messages-debug 
+# to open a trace on the newly created file.
+# 11. From a second terminal, 
+type logger -p daemon.debug "Daemon Debug Message"
+# You’ll see the debug message passing by.
+# 12. Press Ctrl-C to close the debug log file.
+
+# To prevent syslog messages from filling up your system completely, you can rotate
+# the log messages. That means that when a certain threshold has been reached, the
+# old log file is closed and a new log file is opened. 
+# The logrotate utility is started periodically to take care of rotating log files.
+# When a log file is rotated, the old log file is typically copied to 
+# a file that has the rotation date in it. 
+# So, if /var/log/messages is rotated on June 8, 2023, the rotated
+# filename will be /var/log/messages-20230608.
+# As a default, four old log files are kept on the system. 
+# Files older than that period are removed from the system automatically.
+
+# The default settings for log rotation are kept in the file /etc/logrotate.conf
+cat /etc/logrotate.conf
+
+# The most significant settings used in this configuration file tell logrotate to
+# rotate files on a weekly basis and keep four old versions of the file. 
+# You can obtain more information about other parameters in this file 
+# through the man logrotate command.
+
+# If specific files need specific settings, you can create a configuration file 
+# for that file in /etc/logrotate.d. 
+# The settings for that specific file overwrite the default settings in
+# /etc/logrotate.conf. 
+# You will find that different files exist in this directory already to
+# take care of some of the configuration files.
+
+# spaced repetition example questions
+# 1. Which file is used to configure rsyslogd?
+# 2. Which log file contains messages related to authentication?
+# 3. If you do not configure anything, how long will it take for log files to be
+# rotated away?
+# 4. Which command enables you to log a message from the command line to the
+# user facility, using the notice priority?
+# 5. Which line would you add to write all messages with a priority of info to the
+# file /var/log/messages.info?
+# 6. Which configuration file enables you to allow the journal to grow beyond its
+# default size restrictions?
+# 7. Which command allows you to check the systemd journal for boot messages,
+# where an explanation is included?
+# 8. Which command enables you to see all journald messages that have been
+# written for PID 1 between 9:00 a.m. and 3:00 p.m.?
+# 9. Which command do you use to see all messages that have been logged for the
+# sshd service?
+# 10. Which procedure enables you to make the systemd journal persistent?
+
+# lab
+# 1. Configure the journal to be persistent across system reboots.
+# 2. Make a configuration file that writes all messages with an info priority to the
+# file /var/log/messages.info.
+# 3. Configure logrotate to keep ten old versions of log files.
+
