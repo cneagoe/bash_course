@@ -1085,7 +1085,7 @@ chgrp account /home/account
 groups cip
 
 # change default group for user
-newgrp cip
+sudo usermod -g ops vagrant
 
 # Permission  Applied to Files            Applied to Directories
 # Read        View file content           List contents of directory
@@ -1122,10 +1122,10 @@ chmod -R a+x /dir
 # 5. Still as user laura, use cd /data/sales and use touch emptyfile to create a file in this directory. 
 # Does this work? Type groups to figure out why.
 
-# the set used id SUID permission
+# SUID permission (special user permission)
+# A file with SUID always executes as the user who owns the file, 
+# regardless of the user passing the command.
 # check perm for file containing passwords
-ls -l /etc/shadow
-# no perms
 ls -l /usr/bin/passwd
 # You can see the SUID permission as an s at the position 
 # where normally you would expect to see the x for the user permissions 
@@ -1135,15 +1135,12 @@ ls -l /usr/bin/passwd
 # the user temporarily has root permissions 
 # because the /usr/bin/passwd utility is owned by the root user,
 
-#The second special permission is set group ID (SGID). 
+# The second special permission is set group ID (SGID). 
 # This permission has two effects. 
-# If applied on an executable file, 
-# it gives the user who executes the file the permissions of the group owner of that file. 
-# So, SGID can accomplish more or less the same thing that SUID does. 
-# For this purpose, however, SGID is hardly used. 
-# As is the case for the SUID permission, SGID is applied to some system files as a default setting.
-ls -ld account
-# example SGID
+# If set on a file, it allows the file to be executed 
+# as the group that owns the file (similar to SUID)
+# If set on a directory, any files created in the directory
+# will have their group ownership set to that of the directory owner
 
 # The third of the special permissions is sticky bit. This permission is useful to protect files against
 # accidental deletion in an environment where multiple users have write permissions in the same
