@@ -2407,7 +2407,7 @@ systemctl status logrotate.timer
 # 6. Install the sysstat package, using 
 dnf install -y sysstat
 # 7. Verify the unit files that were added from this package, using 
-systemctl listunit-files sysstat*
+systemctl list-unit-files sysstat*
 # 8. Type 
 systemctl cat sysstat-collect.timer 
 # to show what the sysstat-collect timer is doing. 
@@ -2524,7 +2524,7 @@ cat /etc/cron.d/0hourly
 # To determine how this should be done, 
 # anacron uses the /etc/anacrontab file.
 
-cat cat /etc/anacrontab
+cat /etc/anacrontab
 # see wcontents of anacrontab
 
 # It is not easy to get an overview of the cron jobs 
@@ -2564,7 +2564,7 @@ logger This message is written at $(date)
 # 5. Use 
 chmod +x eachhour 
 # to make the script executable; if you fail to make it executable, it will not work.
-# 6. Enter the directory /etc/crond.d and in this directory 
+# 6. Enter the directory /etc/cron.d and in this directory 
 # create a file with the name eachhour. 
 # Put the following contents in the file:
 11 * * * * root logger This message is written from /etc/cron.d
@@ -3486,3 +3486,5 @@ cat /run/systemd/generator/repo.mount
 # Configure your server to automatically mount these partitions. Mount the Ext4 partition on /mounts/data and mount the swap partition as swap space.
 
 # Reboot your server and verify that all is mounted correctly.
+
+
