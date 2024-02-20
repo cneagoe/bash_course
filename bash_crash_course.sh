@@ -3068,4 +3068,421 @@ cat /etc/logrotate.conf
 # file /var/log/messages.info.
 # 3. Configure logrotate to keep ten old versions of log files.
 
-# ch14
+# manage space
+
+# Master Boot Record (MBR) partitioning scheme
+# was defined as the first 512 bytes on a computer hard drive,
+# contains all that is needed to start a computer, 
+# including a boot loader and a partition table
+
+# Current computer hard drives have become too big to be addressed by MBR partitions. 
+# That is one of the main reasons why a new partitioning scheme was needed.
+
+# GUID Partition Table (GPT) 
+# On computers that are using the new Unified Extensible Firmware Interface (UEFI) 
+# as a replacement for the old BIOS system, GPT partitions are the only way to address disks. 
+# Also, older computer systems that are using BIOS instead of UEFI can be configured with globally unique ID (GUID) partitions, # which is necessary if a disk with a size bigger than 2 TiB needs to be addressed.
+
+# a megabyte is a multiple of 1,000, and a mebibyte is a multiple of 1,024
+
+# Once either MBR or GPT partitions have been created on a disk, 
+# you cannot change its type. 
+# The preferred utility for creating GPT partitions is gdisk. 
+# Alternatively, after starting fdisk on a new disk, 
+# you can use the g command to initialize a GPT.
+
+# Exercises mbr
+# 1. Open a root shell and type 
+lsblk
+# This lists the block devices that are available.
+# 2. Open a root shell and run the 
+fdisk /dev/sda2
+# command. This command needs as its argument the name of the disk device 
+# where you want to create the partition. 
+# This exercise uses /dev/sda2. Change that, if needed, according to your hardware.
+# 3. It is a good idea to check how much disk space you have available. 
+# Press 
+p 
+# to see an overview of current disk allocation
+# 4. Type 
+n 
+# to add a new partition
+# 5. Press 
+p 
+# to create a primary partition.
+# 6. Specify the first sector on disk that the new partition will start on. 
+# The first available sector is suggested by default, so press Enter to accept.
+# 7. Type 
++1G 
+# to make this a 1-GiB partition. 
+# If you were to just press Enter, the last sector available on disk would be suggested. 
+# If you were to use that, after this exercise you would not have any disk space left 
+# to create additional partitions or logical volumes, 
+# so you should use another last sector. 
+# To use another last sector, you can do one of the following:
+# a. Enter the number of the last sector you want to use.
+# b. Enter +number to create a partition that sizes a specific number of sectors.
+# c. Enter +number(K,M,G) to specify the size you want to assign to the partition in KiB, MiB, or GiB.
+# After you enter the partition’s ending boundary, fdisk will show a confirmation.
+# 8. At this point, you can define the partition type. 
+# By default, a Linux partition type is used. 
+# If you want the partition to be of any other partition type, use t to change it. 
+# For this exercise there is no need to change the partition type. 
+# Common partition types include the following:
+# 82: Linux swap
+# 83: Linux
+# 8e: Linux LVM
+# 9. If you are happy with the modifications, press w to write them to disk and exit fdisk.
+# 10. Type lsblk to verify that the new partition has been created successfully.
+
+# Exercises Logical Partition
+# 1. In a root shell, type 
+fdisk /dev/sda2
+# to open the fdisk interface.
+# 2. Type 
+n 
+# to create a new partition. 
+# To create a logical partition, when fdisk prompts which partition type you want to create, enter 
+e
+# This allows you to create an extended partition, which is necessary to later add logical partitions.
+# 3. If the extended partition is the fourth partition that you are writing to the MBR, 
+# it will also be the last partition that can be added to the MBR. 
+# For that reason, it should fill the rest of your computer’s hard disk. 
+# Press Enter to accept the default first sector and 
+# press Enter again when fdisk prompts for the last sector (even if this is not the fourth partition yet).
+# 4. Now that the extended partition has been created, 
+# you can create a logical partition within it. 
+# Still from the fdisk interface, press 
+n 
+# again. Because all of the space in the drive has been allocated to partitions, 
+# the utility will by default suggest adding a logical partition with partition number 5.
+# 5. Press Enter to accept the default first sector. When asked for the last sector, enter 
++1G
+# 6. Now that the logical partition has been created, enter 
+w 
+# to write the changes to disk and quit fdisk.
+
+# To apply the procedure in this exercise, you need a new disk device. 
+# Do not use a disk that contains data that you want to keep, because this exercise will delete all data on it. 
+# If you are using this exercise on a virtual machine, you may add the new disk through
+# the virtualization software. If you are working on a physical machine, 
+# you can use a USB thumb drive as a disk device for this exercise. 
+# Note that this exercise works perfectly on a computer that starts from BIOS and not EFI; 
+# all you need is a dedicated disk device.
+
+# 1. To create a partition with gdisk, open a root shell and type 
+gdisk /dev/sdc
+# (Replace /dev/sdc with the exact device name used on your computer.) 
+# gdisk will try to detect the current layout of the disk, 
+# and if it detects nothing, it will create the GPT and associated disk layout.
+# 2. Type 
+n 
+# to enter a new partition. 
+# You can choose any partition number between 1 and 128, 
+# but it is wise to accept the default partition number that is suggested.
+# 3. You now are asked to enter the first sector. 
+# By default, the first sector that is available on disk will be used, 
+# press Enter to accept the default first sector that is proposed.
+# 4. When asked for the last sector, 
+# by default the last sector that is available on disk is proposed 
+# (which would create a partition that fills the entire hard disk). 
+# You can specify a different last sector, or specify the disk size using +, the size, and KMGTP. 
+# So to create a 1-GiB disk partition, use 
++1G
+# 5. You now are asked to set the partition type. 
+# If you do not do anything, the partition type is set to 8300, 
+# which is the Linux file system partition type. 
+# Other options are available as well. 
+# You can press 
+l 
+# to show a list of available partition types.
+# The relevant partition types are as follows:
+# 8200: Linux swap
+# 8300: Linux file system
+# 8e00: Linux LVM
+# press Enter to accept the default partition type 8300.
+# 6. The partition is now created (but not yet written to disk). 
+# Press p to show an overview, which allows you to verify that this is really what you want to use.
+# 7. If you are satisfied with the current partitioning, press 
+w 
+# to write changes to disk and commit. 
+# This gives a warning which you can safely ignore by typing 
+Y
+# after which the new partition table is written to the GUID partition table.
+# 8. If at this point you get an error message 
+# indicating that the partition table is in use, type 
+partprobe
+# to update the kernel partition table.
+
+# exercises parted
+# 1. From a root shell, type 
+parted /dev/sdd
+# This opens the interactive parted shell.
+# 2. Type 
+help 
+# to get an overview of available commands.
+# 3. Type 
+print
+# You will see a message about an unrecognized disk label.
+# 4. Type 
+mklabel 
+# and press Enter. parted will now prompt for a disk label type. 
+# Press the Tab key twice to see a list of available disk label types. 
+# From the list, select gpt and press Enter.
+# 5. Type 
+mkpart
+# The utility prompts for a partition name. 
+# Type part1 (the partition name doesn’t really matter).
+# 6. Now the utility prompts for a file system type. 
+# This is a very confusing option, 
+# because it suggests that you are setting a file system type here, 
+# but that is not the case. 
+# Also, when using Tab completion, 
+# you’ll see a list of file systems that you’ve probably never used before. 
+# In fact, you could just press Enter to accept the default suggestion of ext2, 
+# as the setting isn’t used anyway, but I suggest using a file system type 
+# that comes close to what you’re going to use on the partition. 
+# So type 
+xfs 
+# and press Enter to continue.
+# 7. Now you are prompted for a start location. 
+# You can specify the start location as a number of blocks, 
+# or an offset from the start of the device. 
+# Notice that you can type 1M to specify the start of the partition at 1 megabyte, 
+# or type 1 MiB to have it start at 1 MiB. 
+# This is confusing, so make sure you specify the appropriate value here. 
+# At this point, type 
+1MiB 
+# and press Enter.
+# 8. Type 
+1GiB 
+# to specify the end of the partition. 
+# After doing so, type 
+print
+# to print the current partition table, and type 
+quit 
+# to quit the utility and commit your changes.
+# 9. Type 
+lsblk
+# to verify the new partition has been created. It should show as /dev/sdd1 
+# or something else depending on what you selected at the start.
+# 10. Use 
+mkfs.ext4 /dev/sdd1 
+# to format this partition with the Ext4 file system.
+
+# File System   Description
+# XFS           The default file system in RHEL 9.
+# Ext4          The default file system in previous versions of RHEL; still available and supported in RHEL 9.
+# Ext3          The previous version of Ext4. On RHEL 9, there is no need to use Ext3 anymore.
+# Ext2          A very basic file system that was developed in the early 1990s. 
+#               There is no need to use this file system on RHEL 9 anymore.
+# BtrFS         A relatively new file system that is not supported in RHEL 9.
+# NTFS          A Windows-compatible file system that is not supported on RHEL 9.
+# VFAT          A file system that offers compatibility with Windows and macOS 
+#               and is the functional equivalent of the FAT32 file system. 
+#               Useful on USB thumb drives that exchange data with other computers 
+#               but not on a server’s hard disks.
+
+mkfs.xfs /dev/sdb1
+# format the /dev/sdb1 partition with the xfs file system
+
+# manage Ext4 System Properties
+tune2fs -l
+# show file system properties
+
+# tune2fs -o will set default file system mount options
+# When set to the file system, 
+# the option does not have to be specified while mounting through /etc/fstab anymore. 
+tune2fs -o acl,user_xattr 
+# to switch on access control lists and user-extended attributes. 
+# Use a ^ in front of the option to switch it off again, as in 
+tune2fs -o ^acl,user_xattr
+
+# Ext file systems also come with file system features that may be enabled as a default. 
+# To switch on a file system feature, use tune2fs -O followed by the feature. 
+# To turn a feature off, use a ^ in front of the feature name.
+
+# Use 
+tune2fs -L 
+# to set a label on the file system
+# an alternative is the e2label command, 
+# which also enables you to set a label on the file system.
+
+# manage XFS System Properties
+
+xfs_admin -L mylabel 
+# will set the file system label to mylabel
+
+# exercise swap partition
+# 1. Type 
+fdisk /dev/sdb 
+# to open your disk in fdisk.
+# 2. Press 
+n 
+# to add a new partition. 
+# Specify start cylinder and size to create a 1-GiB partition.
+# 3. Type 
+t 
+# to change the partition type. 
+# If you are using fdisk, type swap to set the swap partition type to 82. 
+# If you are using gdisk, use partition type 8200. 
+# Press w to write and exit.
+# 4. Usem kswap to format the partition as swap space. 
+# Use, for instance, 
+mkswap /dev/sdb6 
+# if the partition you have just created is /dev/sdb6.
+# 5.Type 
+free -m
+# You see the amount of swap space that is currently allocated. 
+# This does not include the swap space you have just created, 
+# as it still needs to be activated.
+# 6. Use swapon to switch on the newly allocated swap space. 
+# If, for instance, the swap device you have just created is /dev/sdb6, use 
+swapon /dev/sdb6 
+# to activate the swap space.
+# 7. Type 
+free -m 
+# again. You see that the new swap space has been added to your server.
+# 8. Open the file /etc/fstab with an editor and, 
+# on the last line, add the following 
+# to ensure the swap space is also available after a reboot: 
+/dev/sdb6 none swap defaults 0 0
+
+# If you do not have free disk space to create a swap partition 
+# and you do need to add swap space urgently, 
+# you can use a swap file as well. From a performance perspective, 
+# it does not even make that much difference 
+# if a swap file is used instead of a swap device 
+# such as a partition or a logical volume, 
+# and it may help you fulfill an urgent need in a timely manner.
+
+# To add a swap file, you need to create the file first. The 
+dd if=/dev/zero of=/swapfile bs=1M count=100 
+# command would add 100 blocks with a size of 1 MiB from the /dev/zero device 
+# (which generates 0s) to the /swapfile file. 
+# The result is a 100-MiB file that can be configured as swap. 
+# To do so, you can follow the same procedure as for swap partitions. 
+# First use 
+mkswap /swapfile 
+# to mark the file as a swap file, and then use 
+swapon /swapfile 
+# to activate it. Also, put it in the /etc/fstab file 
+# so that it will be initialized automatically, 
+# using the following line:
+/swapfile  none swap  defaults  0 0
+
+# Just creating a partition and putting a file system on it is not enough 
+# to start using it. To use a partition, you have to mount it as well. 
+# By mounting a partition (or better, the file system on it), 
+# you make its contents accessible through a specific directory.
+# To manually mount a file system, you use the mount command. 
+# To disconnect a mounted file system, you use the umount command.
+# examples
+mount /dev/sdb5 /mnt
+umount /dev/sdb5
+umount /mnt
+
+# If your server is used in an environment where a dynamic storage topology is used,
+# you may today have a storage device /dev/sdb5, 
+# which tommorow changes in the storage topology can be /dev/sdc5 after the next reboot of your server. 
+# This is why on a default RHEL 9 installation, 
+# universally unique IDs (UUIDs) are used instead of device names.
+
+# Every file system by default has a UUID associated with it
+# not just file systems that are used to store files 
+# but also special file systems such as the swap file system. 
+# You can use the 
+blkid 
+# command to get an overview of the current file systems 
+# on your system and the UUID that is used by that file system.
+
+# To mount a file system based on a UUID, you use UUID=nnnnn instead of the device name
+# mount UUID="5d34b37c-5d32-4790-8364-d22a8b8f88db" /mnt
+
+# Normally, you do not want to be mounting file systems manually. 
+# Once you are happy with them, it is a good idea to have them mounted automatically. 
+# The classical way to do this is through the /etc/fstab file.
+
+# Field                  Description
+# Device                 The device that must be mounted. A device name, UUID, or label can be used.
+# Mount Point            The directory or kernel interface where the device needs to be mounted.
+# File System            The file system type.
+# Mount Options          Mount options.
+# Dump Support           Use 1 to enable support to back up using the dump utility. 
+#                        This may be necessary for some backup solutions.
+# Automatic Check        This field specifies whether the file system should be checked automatically when booting. 
+#                        Use 0 to disable automated check, 
+#                        1 if this is the root file system and it has to be checked automatically, 
+#                        and 2 for all other file systems that need automatic checking while booting. 
+#                        Network file systems should have this option set to 0.
+
+# mount options
+# Option               Use
+# auto / noauto        Mounts/does not mount the file system automatically.
+# acl                  Adds support for file system access control lists
+# user_xattr           Adds support for user-extended attributes .
+# ro                   Mounts the file system in read-only mode.
+# atime / noatime      Disables/enables access time modifications.
+# noexec / exec        Denies/allows execution of program files from the file system.
+
+# The fifth column of /etc/fstab specifies support for the dump utility, 
+# which was developed a long time ago to create file system backups. 
+# On modern file systems this option is not needed, 
+# which is why you will see it set to 0 in most cases.
+
+# The last column indicates if the file system integrity needs to be checked while booting. 
+# Enter a 0 if you do not want to check the file system at all, 
+# a 1 if this is the root file system that needs to be checked before anything else, 
+# and a 2 if this is a non-root file system that needs to be checked while booting. 
+# Because file system consistency is checked in another way, 
+# this option is now commonly set to the value 0.
+
+findmnt --verify 
+# Verifies /etc/fstab syntax and alerts you if anything is incorrect.
+
+mount -a 
+# Mounts all file systems that have a line in /etc/fstab and are not currently mounted.
+
+# exercises
+# 1. From a root shell, type 
+blkid
+# Use the mouse to copy the UUID=“nnnn” part for /dev/sdb5.
+# 2. Type 
+mkdir -p /mounts/data 
+# to create a mount point for this partition.
+# 3. Open /etc/fstab in an editor and add the following line:
+UUID="nnnn"    /mounts/data    xfs    defaults 0 0
+# 4. Before you attempt an automatic mount while rebooting, 
+# it is a good idea to test the configuration. 
+# Type 
+mount -a
+# This command mounts everything that is specified in /etc/fstab
+# and that has not been mounted already.
+# 5.Type 
+df -h 
+# to verify that the partition has been mounted correctly.
+
+# In recent RHEL versions it is used as an input file to create systemd mounts, 
+# as ultimately systemd is responsible for mounting file systems.
+cat /run/systemd/generator/repo.mount
+
+# sample spaced repetition questions
+# 1.Which tool do you use to create GUID partitions?
+# 2. Which tool do you use to create MBR partitions?
+# 3. What is the default file system on RHEL 9?
+# 4. What is the name of the file that is used to automatically mount partitions while booting?
+# 5. Which mount option do you use if you want a file system not to be mounted automatically while booting?
+# 6. Which command enables you to format a partition that has type 82 with the appropriate file system?
+# 7. You have just added a couple of partitions for automatic mounting while booting. 
+# How can you safely test if this is going to work without actually rebooting?
+# 8. Which file system is created if you use the mkfs command without any file system specification?
+# 9. How do you format an Ext4 partition?
+# 10. How do you find UUIDs for all devices on your computer?
+
+# lab
+
+# Add two partitions to your server. Create both partitions with a size of 100 MiB. One of these partitions must be configured as swap space; the other partition must be formatted with an Ext4 file system.
+
+# Configure your server to automatically mount these partitions. Mount the Ext4 partition on /mounts/data and mount the swap partition as swap space.
+
+# Reboot your server and verify that all is mounted correctly.
