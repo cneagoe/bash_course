@@ -15,3 +15,5 @@ https://www.gnu.org/software/bash/manual/html_node/index.html
 https://mywiki.wooledge.org/BashFAQ
 
 https://mywiki.wooledge.org/BashPitfalls
+
+https://exercism.org/tracks/bash/exercises
