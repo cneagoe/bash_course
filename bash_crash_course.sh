@@ -3487,4 +3487,191 @@ cat /run/systemd/generator/repo.mount
 
 # Reboot your server and verify that all is mounted correctly.
 
+# advanced storage
+# Partitions are inflexible, they cannot be increased or reduced. 
+# That is why the Logical Volume Manager was introduced. 
+# Increasing and decreasing space is possible when working with LVM. 
+# We can view this LVM architecture as layers.
+# On the lowest layer, the storage devices are used. 
+# These can be any storage devices, such as complete disks, partitions,  
+# and whatever else is made possible in modern storage topologies.
+# The seccond layer is physical volumes, 
+# which allows other utilities to gain access to the logical volume representing the third layer. 
+
+# Physical volumes can be added to the volume groups
+# The volume group is not something that is fixed, 
+# but it can be resized when needed, 
+# which makes it possible to add more space on the volume group level 
+# If you are running out of disk space on a logical volume, 
+# you take available disk space from the volume group. 
+# And if there is no available disk space in the volume group, 
+# you just add it by adding a physical volume.
+# On top of the volume group are the logical volumes. 
+# Logical volumes get their disk space from available disk space in the volume group. 
+# That means that a logical volume may consist of available storage from multiple physical volumes, 
+# which adds an important layer of additional flexibility to the storage configuration.
+
+# ADVICE :
+# It is a good idea to avoid logical volumes from spanning multiple physical volumes; 
+# if one of the physical volumes breaks, all files on the LVM file system will become inaccessible.
+# The actual file systems are created on the logical volumes. 
+# Because the logical volumes are flexible with regard to size, 
+# that makes the file systems flexible as well. 
+
+# It is also possible to reduce the size of a logical volume besides increasing it, 
+# but only if the file system that was created on that volume supports the feature 
+# Ext4 supports growing and shrinking; XFS size can only be increased.
+
+# backup
+# A snapshot keeps the current state of a logical volume,
+# it can be used to revert to a previous situation 
+# and to make a backup of the file system on the logical volume 
+# if the volume is open.
+# LVM snapshots are created by copying the logical volume administrative data 
+# (the metadata) that describes the current state of files to a snapshot volume. 
+# As long as nothing changes in the original volume the snapshot volume will stay the same size.
+# When blocks are modified, the blocks containing the previous state of the file are copied over 
+# to the snapshot volume, which will grow in size. 
+
+# Another important advantage of using LVM logical volumes 
+# is the option to replace failing hardware easily. 
+# If a hard disk is failing, data can be moved within the volume group 
+# (through the pvmove command), the failing disk can then be removed from the volume group,
+# and a new hard disk can be added dynamically, 
+# without requiring any downtime for the logical volume itself.
+
+# You absolutely do not need to memorize the commands discussed here for the RHCSA exam. 
+# All you really need to remember are pv, vg, and lv. 
+# Open a command line, type pv, and press the Tab key twice. 
+# This will show all commands that start with pv, 
+# which are all commands that are used for managing physical volumes. 
+# After you have found the command you need, 
+# run this command with the --help option. 
+# This shows a usage summary that lists everything you must do to create the element you need.
+
+# you can use an empty cheap usb stick to practice creating partitions and lvms 
+# these are all the steps you need to go through
+# 1.  Open a root shell and type fdisk /dev/sdd
+# 2.  Type p. This will show the current partition table layout. 
+#     There should be none at this point.
+# 3.  Type g to create a GPT partition table.
+# 4.  Type n to create a new partition. Press Enter when asked for the partition number, 
+#     as well as when asked for the first sector.
+# 5.  When prompted for the last sector, type +1G to create a 1-GiB partition.
+# 6.  Type t to change the partition type. 
+#     As you only have one partition at the moment, 
+#     this partition is automatically selected. 
+#     When prompted for the partition type, enter lvm.
+# 7.  Press p to verify the partition was created successfully.
+# 8.  Repeat this procedure to create three other 1-GiB LVM partitions for future use.
+# 9.  Press w to write the new partitions to disk and quit fdisk.
+# 10. Use the lsblk command to verify that the new partitions were created successfully.
+# 11. Type pvcreate /dev/sdd1 to mark the new partition as an LVM physical volume.
+# 12. Type pvs to verify that the physical volume was created successfully.
+
+# As an alternative to the pvs command, which shows 
+# a summary of the physical volumes and their attributes, 
+# you can use the pvdisplay command to show more details.
+# If you want a compact overview of the current storage configuration on your server, 
+# you might also like the lsblk command.
+
+# Now that the physical volume has been created, 
+# you can assign it to a volume group (VG). 
+# Just type vgcreate followed by the name of the volume group you want to create 
+# and the name of the physical device you want to add to it. 
+# So, if the physical volume name is /dev/sdd1, the complete command is vgcreate vgdata /dev/sdd1. 
+# You are completely free in your choice of name for the volume group.
+
+# one shot
+# If you want to add the disk /dev/sdc, for instance, 
+# just type vgcreate vgdata /dev/sdc to create a volume group vgdata 
+# that contains the /dev/sdc device. When you are doing this to add a device 
+# that has not been marked as a physical volume yet, 
+# the vgcreate utility will automatically flag it as a physical volume 
+# so that you can see it while using the pvs command.
+
+# When you’re creating volume groups, a physical extent size is used. 
+# The physical extent size defines the size of the building blocks 
+# used to create logical volumes. 
+# A logical volume always has a size that is a multiple of the physical extent size. 
+# If you need to create huge logical volumes, 
+# it is more efficient to use a big physical extent size. 
+# If you do not specify anything, a default extent size of 4 MiB is used. 
+# The physical extent size is always specified as a multiple of 2 MiB, 
+# with a maximum size of 128 MiB. 
+# Use the vgcreate -s option to specify the physical extent size you want to use.
+
+# When you’re working with an ext4 file system, logical extents are used. 
+# The extent sizes on LVM are in no way related to the extent sizes that are used on the file systems.
+
+# After creating the volume group, you can request details about the volume group 
+# using the vgs command for a short summary, or the vgdisplay command to get more information.
+
+# LVM volume device names can be addressed in multiple ways. 
+# The simple method is to address the device as /dev/vgname/lvname. 
+# So, for example, if you have created a volume with the name lvdata, 
+# which gets its available disk space from the vgdata volume group, 
+# the device name would be /dev/vgdata/lvdata
+
+# The device mapper (abbreviated as dm) is a generic interface 
+# that the Linux kernel uses to address storage devices. 
+# The device mapper is used by multiple device types, 
+# such as LVM volumes, but also by software RAID 
+# and advanced network storage devices such as multipath devices.
+
+# Device mapper devices are generated on detection and use names that are generated while booting, 
+# like /dev/dm-0 and /dev/dm-1. To make these devices easier to access, 
+# the device mapper creates symbolic links in the /dev/mapper directory.
+# The symbolic links follow the naming structure /dev/mapper/vgname-lvname.
+# So, the device /dev/vgdata/lvdata would also be known as /dev/mapper/vgdata-lvdata.
+# When working with LVM logical volumes, you can use either of these device names.
+
+# 1.  Open a root shell. 
+#     Type pvs to verify the availability of physical volumes on your machine. 
+#     You should see the /dev/sdd1 physical volume that was created previously.
+# 2.  Type vgcreate vgdata /dev/sdd1. 
+#     This will create the volume group with the physical volume assigned to it.
+# 3.  Type vgs to verify that the volume group was created successfully. 
+#     Also type pvs. Notice that this command now shows the name of the physical volumes, 
+#     with the names of the volume groups they are assigned to.
+# 4.  Type lvcreate -n lvdata -l 50%FREE vgdata. 
+#     This creates an LVM logical volume with the name lvdata, 
+#     which will use 50% of available disk space in the vgdata volume group.
+# 5.  Type lvs to verify that the volume was added successfully.
+# 6.  Type mkfs.ext4 /dev/vgdata/lvdata to create the file system.
+# 7.  Type mkdir /files to create a folder on which the volume can be mounted.
+# 8.  Add the following line to the bottom of /etc/fstab:
+#     /dev/vgdata/lvdata /files ext4 defaults 0 0
+# 9.  Type mount -a to verify that the mount works and mount the file system.
+# 10. Use lsblk to verify that the partition was mounted successfully.
+
+# common commands for managing lvm 
+# Command            Explanation
+# pvcreate           Creates physical volumes
+# pvs                Shows a summary of available physical volumes
+# pvdisplay          Shows a list of physical volumes and their properties
+# pvremove           Removes the physical volume signature from a block device
+# vgcreate           Creates volume groups
+# vgs                Shows a summary of available volume groups
+# vgdisplay          Shows a detailed list of volume groups and their properties
+# vgremove           Removes a volume group
+# lvcreate           Creates logical volumes
+# lvs                Shows a summary of all available logical volumes
+# lvdisplay          Shows a detailed list of available logical volumes and their properties
+
+# resizing logical volumes
+# lvresize -r -l 75%VG /dev/vgdata/lvdata 
+#   Resizes the logical volume so that it will take 75% of the total disk space in the volume group. 
+#   Notice that if currently the logical volume is using more than 75% of the volume group disk space, 
+#   this command will try to reduce the logical volume size!
+# lvresize -r -l +75%VG /dev/vgdata/lvdata 
+#   Tries to add 75% of the total size of the volume group to the logical volume. 
+#   This will work only if currently at least 75% of the volume group is unused. 
+#   (Notice the difference with the previous command.)
+# lvresize -r -l +75%FREE /dev/vgdata/lvdata 
+#   Adds 75% of all free disk space to the logical volume.
+# lvresize -r -l 75%FREE /dev/vgdata/lvdata 
+#   Resizes the logical volume to a total size that equals 75% of the amount of free disk space, 
+#   which may result in an attempt to reduce the logical volume size. 
+#   (Notice the difference with the previous command.)
 
