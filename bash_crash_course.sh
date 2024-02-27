@@ -3675,3 +3675,204 @@ cat /run/systemd/generator/repo.mount
 #   which may result in an attempt to reduce the logical volume size. 
 #   (Notice the difference with the previous command.)
 
+# ex remove vg from pv
+# 1.  Use fdisk to create two partitions with a size of 2 GiB each, 
+#       and set the type to lvm. In the remainder of this exercise, 
+#       I’ll assume you’re using the partitions /dev/sdd3 and dev/sdd4 for this purpose.
+# 2.  Use vgcreate vgdemo /dev/sdd3 to create a volume group.
+# 3.  Type lvcreate -L 1G -n lvdemo /dev/vgdemo to create a logical volume 
+#       with a size of 1 GiB. Notice that it is essential 
+#       not to use all of the available disk space!
+# 4.  Type vgextend vgdemo /dev/sdd4 to extend the volume group.
+# 5.  Use pvs to verify extent usage on /dev/sdd3 and /dev/sdd4. 
+#       You should see that sdd3 is using about half of its extents, 
+#       and all extents on /dev/sdd4 are still unused.
+# 6.  Now type lvextend -L +500M /dev/vgdemo/lvdemo /dev/sdd4 
+#       to grow the lvdemo logical volume. Notice that you have to add 
+#       /dev/sdd4 to ensure that free extents will be taken from the sdd4 device.
+# 7.  Type pvs to verify current extent usage on the devices.
+# 8.  Create a file system, using mkfs.ext4 /dev/vgdemo/lvdemo
+# 9.  Temporarily mount the logical volume, using mount /dev/vgdemo/lvdemo /mnt
+# 10. Use df -h to verify disk space usage.
+# 11. Use dd if=/dev/zero of=/mnt/bigfile bs=1M count=1100. 
+#       The size ensures that file data is on both PVs.
+
+
+
+# Stratis
+# In RHEL 9, Red Hat is offering Stratis as an advanced storage solution. 
+# Stratis is a so-called volume-managing file system, 
+# and it introduces advanced storage features that were not available prior to RHEL 8. 
+# By doing so, Red Hat intends to offer an alternative to the Btrfs and ZFS file systems 
+# that are used in other environments. 
+# The following features are offered by Stratis:
+# Thin provisioning: This feature enables a Stratis file system 
+# to present itself to users as much bigger than it really is. 
+# This is useful in many environments, such as virtual desktops, 
+# where each user may see 20 GiB of available storage in total 
+# although a much lower amount is actually provisioned to each user.
+# Snapshots: A Stratis snapshot allows users 
+# to take a “picture” of the current state of a file system. 
+# This snapshot makes it easy to revert to the previous state of a file system, 
+# rolling back any changes that have been made.
+# Cache tier: Cache tier is a Ceph storage feature that ensures 
+# that data can be stored physically closer to the Ceph client, 
+# which makes data access faster.
+# Programmatic API: The programmatic API ensures that storage 
+# can easily be configured and modified through API access. 
+# This is particularly interesting in cloud environments, 
+# where setting up storage directly from cloud-native applications is extremely useful.
+# Monitoring and repair: Whereas older file systems need tools like fsck 
+# to verify the integrity of the file system, 
+# Stratis has built-in features to monitor the health 
+# of the file system and repair it if necessary.
+
+# Architecture
+
+# The lowest layer in the Stratis architecture is the pool. 
+# The Stratis pool is comparable to an LVM volume group. 
+# A pool represents all the available storage 
+# and consists of one or more storage devices, 
+# which in a Stratis environment are referred to as blockdev. 
+# These block devices may not be thin provisioned 
+# at the underlying hardware level. 
+# Stratis creates a /dev/stratis/poolname directory for each pool.
+
+# From the Stratis pool, XFS file systems are created. 
+# Note that Stratis only works with XFS, 
+# and the XFS file system it uses is integrated with the Stratis volume. 
+# When a file system is created, no size is specified, 
+# and each file system can grow up to the size of all the available storage space in the pool. 
+# Stratis file systems are always thin provisioned. 
+# The thin volume automatically grows as more data is added to the file system.
+
+# create stratis storage, overview
+
+# 1. Install the Stratis software using dnf by 
+#     installing the stratis-cli and stratisd packages.
+# 2. Start and enable the user-space daemon, 
+#     using systemctl enable --now stratisd.
+# 3. Once the daemon is running, 
+#     use the stratis pool create command to create the pool that you want to work with. 
+#     For instance, use stratis pool create mypool /dev/sde 
+#     to create a pool that is based on the block device /dev/sdd. 
+#     You can add additional block devices later, 
+#     using stratis pool add-data poolname blockdevname, 
+#     as in stratis pool add-data mypool /dev/sde.
+# 4. Once you have created the pool, 
+#     add a file system using stratis fs create poolname fsname.
+# 5. To verify that all was created successfully, 
+#     use the stratis fs list command.
+# 6. After creating the file system, you can mount it. 
+#     To mount a Stratis file system through /etc/fstab, 
+#     you must use the UUID; using the device name is not supported. 
+#     Also, when mounting the Stratis volume through /etc/fstab, 
+#     include the mount option x-systemd.requires=stratisd.service 
+#     to ensure that the Systemd waits to activate this device 
+#     until the stratisd service is loaded. 
+#     Without this option you won’t be able to boot your system anymore.
+
+# management
+# After creating the Stratis file system, you can perform several different management tasks. 
+# To start with, you can dynamically extend the pool, using stratis pool add-data. 
+# Also, you need to monitor Stratis volumes using Stratis-specific tools, 
+# as the traditional Linux tools cannot handle the thin-provisioned volumes. 
+# The following commands are available:
+# stratis blockdev:   Shows information about all block devices that are used for Stratis.
+# stratis pool:       Gives information about Stratis pools. 
+#                     Note in particular the Physical Used parameter,   
+#                     which should not come too close to the Physical Size parameter.
+# stratis filesystem: Enables you to monitor individual file systems.
+
+# exercise Stratis
+#   You need one dedicated disk with a minimal size of 5 GiB to perform the steps in this exercise. 
+#   In this exercise, the disk name /dev/sde is used as an example. 
+#   Replace this name with the disk device name that is presented on your hardware.
+
+# 1.  Type 
+dnf install stratisd stratis-cli 
+#     to install all the required packages.
+# 2.  Type 
+systemctl enable --now stratisd 
+#     to enable the Stratis daemon.
+# 3.  Type 
+stratis pool create mypool /dev/sde 
+#     to add the entire disk /dev/sde to the storage pool.
+# 4.  Type 
+stratis pool list 
+#     to verify successful creation of the pool.
+# 5.  Type 
+stratis fs create mypool stratis1
+#     to create the first Stratis file system. 
+#     Note that you don’t have to specify a file system size.
+# 6.  Type 
+stratis fs list 
+#     to verify the creation of the file system.
+# 7.  Type 
+mkdir /stratis1 
+#     to create a mount point for the Stratis file system.
+# 8.  Type 
+stratis fs list 
+#     to find the Stratis volume UUID.
+# 9.  Add the following line to /etc/fstab to enable the volume 
+#     to be mounted automatically. 
+#     Make sure to use the UUID name that is used by your Stratis file system.
+UUID=xxx /stratis1 xfs defaults,x-systemd.requires=stratisd.
+service   0 0
+# 10. Type 
+mount -a 
+#     to mount the Stratis volume. 
+#     Use the 
+mount 
+#     command to verify that this procedure worked successfully.
+# 11. Type 
+cp /etc/[a-f]* /stratis1 
+#     to copy some files to the Stratis volume.
+# 12. Type 
+stratis filesystem snapshot mypool stratis1 stratis1-snap 
+#     to create a snapshot of the volume you just created. 
+#     Note that this command may take up to a minute to complete.
+# 13. Type 
+stratis filesystem list 
+#     to get statistics about current file system usage.
+# 14. Type 
+rm -f /stratis1/a* 
+#     to remove all files that have a name starting with a.
+# 15. Type 
+mount /dev/stratis/mypool/stratis1-snap /mnt 
+#     and verify that the files whose names start with a 
+#     are still available in the /mnt directory.
+# 16. Reboot your server. 
+#     After reboot, verify that the Stratis volume is still automatically mounted.
+
+# sample questions for spaced repetition
+# 1. Which partition type is used on a GUID partition that needs to be used in LVM?
+# 2. Which command enables you to create a volume group with the name vgroup 
+#    that contains the physical device /dev/sdb3 and uses a physical extent size of 4 MiB?
+# 3. Which command shows a short summary of the physical volumes 
+#    on your system as well as the volume group to which these belong?
+# 4. What do you need to do to add an entire hard disk /dev/sdd to the volume group vgroup?
+# 5. Which command enables you to create a logical volume lvvol1 with a size of 6 MiB?
+# 6. Which command enables you to add 100 MB to the logical volume lvvol1, 
+#    assuming that the disk space is available in the volume group?
+# 7. Which two commands do you use to remove a physical volume from a volume group?
+# 8. When working with Stratis, what line would you add to /etc/fstab to mount the Stratis volume?
+# 9. Which command do you use to create a Stratis pool that is based on the block device /dev/sdd?
+# 10. How do you format a Stratis volume with the Ext4 file system?
+
+# lab 1
+# Create a 500-MB logical volume named lvgroup. 
+# Format it with the XFS file system and mount it persistently on /groups. 
+# Reboot your server to verify that the mount works.
+# After rebooting, add another 250 MB to the lvgroup volume that you just created. 
+# Verify that the file system resizes as well while resizing the volume.
+# Verify that the volume extension was successful.
+
+# lab 2
+# Create a Stratis pool with a size of 5 GiB. 
+# In this pool, create two Stratis file systems 
+# and ensure that they are automatically mounted.
+# Add an additional block device to the Stratis pool 
+# and verify that the size of the pool was successfully extended.
+# Ensure that the new Stratis device is 
+# automatically mounted on the directory /stratis while rebooting.
