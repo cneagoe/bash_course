@@ -3675,7 +3675,7 @@ cat /run/systemd/generator/repo.mount
 #   which may result in an attempt to reduce the logical volume size. 
 #   (Notice the difference with the previous command.)
 
-# ex remove vg from pv
+# ex remove vg from lv
 # 1.  Use fdisk to create two partitions with a size of 2 GiB each, 
 #       and set the type to lvm. In the remainder of this exercise, 
 #       I’ll assume you’re using the partitions /dev/sdd3 and dev/sdd4 for this purpose.
