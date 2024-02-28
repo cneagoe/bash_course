@@ -9,6 +9,7 @@ export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS="1"
 vagrant plugin install virtualbox_WSL2
 
 # https://blog.thenets.org/how-to-run-vagrant-on-wsl-2/
+# https://docs.ansible.com/ansible/latest/scenario_guides/guide_vagrant.html
 
 # installing prereq on ubuntu
 # docs
