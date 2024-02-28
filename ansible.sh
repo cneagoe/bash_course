@@ -1,3 +1,13 @@
+# vagrant setup on wsl
+sudo apt install vagrant
+# you can get specific version with following command 
+sudo apt-get install vagrant=2.4.0-1
+# vagrant version must match beween win and wsl
+# in .bashrc add the following
+export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS="1"
+# install plugin
+vagrant plugin install virtualbox_WSL2
+
 # installing prereq on ubuntu
 # docs
 # https://docs.ansible.com/ansible/latest/getting_started/index.html
@@ -5,6 +15,7 @@
 sudo apt update
 sudo apt install software-properties-common
 sudo apt-add-repository --yes --update ppa:ansible/ansible
+dnf config-manager --add-repo https://github.com/ansible-community/ppa
 sudo apt install ansible sshpass
 ansible --version
 
