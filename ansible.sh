@@ -118,7 +118,7 @@ $ vim software.yml
 cat /etc/ansible/hosts
 
 # vagrant inventory 
-# .vagrant/provisioners/ansible/inventory/vagrant_ansible_inventory
+# mv ~/.vagrant/provisioners/ansible/inventory/vagrant_ansible_inventory ~/.
 server2 ansible_host=172.26.144.1 ansible_port=2200 ansible_user='vagrant' ansible_ssh_private_key_file='/home/cip/.vagrant/machines/server2/virtualbox/private_key'
 server1 ansible_host=172.26.144.1 ansible_port=2222 ansible_user='vagrant' ansible_ssh_private_key_file='/home/cip/.vagrant/machines/server1/virtualbox/private_key'
 
