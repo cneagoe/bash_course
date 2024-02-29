@@ -6,6 +6,7 @@
 # vagrant version must match beween win and wsl
 # in .bashrc add the following
 export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS="1"
+source .bashrc
 # install plugin
 vagrant plugin install virtualbox_WSL2
 
