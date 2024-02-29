@@ -48,7 +48,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 sudo apt update
 sudo apt install software-properties-common
 sudo apt-add-repository --yes --update ppa:ansible/ansible
-dnf config-manager --add-repo https://github.com/ansible-community/ppa
+# for centos9 add repa ass follows
+# dnf config-manager --add-repo https://github.com/ansible-community/ppa
 sudo apt install ansible sshpass
 ansible --version
 
