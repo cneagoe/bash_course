@@ -1,7 +1,8 @@
-# vagrant setup on wsl
-sudo apt install vagrant
-# you can get specific version with following command 
-sudo apt-get install vagrant=2.4.0-1
+# vagrant setup on wsl ubuntu
+# change with the version you have on win
+ wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+ echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+ sudo apt update && sudo apt install vagrant=2.4.0-1
 # vagrant version must match beween win and wsl
 # in .bashrc add the following
 export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS="1"
