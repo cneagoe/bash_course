@@ -844,3 +844,175 @@ web_service: httpd
 # 6. Run the playbook with some verbosity to verify it is working by using 
 ansible-playbook -vv webservers.yaml
 
+# multivalued variables :
+# array example
+users:
+ - linda:
+   username: linda
+   homedir: /home/linda
+   shell: /bin/bash
+ - lisa:
+   username: lisa
+   homedir: /home/lisa
+   shell: /bin/bash
+ - anna:
+   username: anna
+   homedir: /home/anna
+   shell: /bin/bash
+
+# dictionary example
+users:
+  linda:
+    username: linda
+    homedir: /home/linda
+    shell: /bin/bash
+  lisa:
+    username: lisa
+    homedir: /home/lisa
+    shell: /bin/bash
+  anna:
+    username: anna
+    homedir: /home/anna
+    shell: /bin/bash
+
+# reference dict example
+---
+- name: show dictionary also known as hash
+  hosts: ansible1
+  vars_files:
+  - vars/users-dictionary
+  tasks:
+  - name: print dictionary values
+    debug:
+    msg: "User {{ users.linda.username }} has homedirectory {{ users.linda.homedir }} and shell {{ users.linda.shell }}"
+# the form bellow is also valid
+# "User {{ users['linda']['username']}} has homedirectory {{ users['linda']['homedir'] }} and shell {{ users['linda']['shell'] }}"
+
+# Magic variables are variables that are set
+# automatically by Ansible to reflect an Ansible internal
+# state. There are about 30 magic variables;
+# check them all out here
+# https://docs.ansible.com/ansible/latest/reference_appendices/special_variables.html#special-variables
+
+# The most important thing that you should remember
+# about magic variables is that you cannot use their name
+# for anything else. If you try to set a magic variable to
+# another value anyway, it always resets to the default
+# internal value.
+
+# magic variables example
+ansible localhost -m debug -a 'var=hostvars["ansible1"]'
+
+# variable precedence
+# The most important advice is to just keep
+# it simple and avoid using variables with the same names
+# that are defined at different levels. That way, you avoid
+# having to think about variable precedence.
+
+# If a variable with the same name is defined at different
+# levels anyway, the most specific variable always wins.
+# Variables that are defined while running the playbook
+# command using the -e key=value command-line
+# argument have the highest precedence. After variables
+# that are passed as command-line options, playbook
+# variables are considered. Next are variables that are
+# defined for inventory hosts or host groups.
+
+# vault
+# Sometimes, you must deal with sensitive data when
+# working with Ansible—think about webkeys, passwords,
+# and other types of sensitive data that you really shouldn’t
+# store as plain text in a playbook. Ansible Vault is the
+# solution to that problem. You can use Ansible Vault to
+# encrypt and decrypt sensitive data to make it unreadable,
+# and only while accessing data does it ask for a password
+# so that it is decrypted.
+
+ansiblevault create secret.yaml
+# Ansible Vault prompts for a password 
+# and then opens the file using the default editor.
+# If a password file is used, 
+# the encrypted variable file can be created using
+ansible-vault create --vault-passwordfile=passfile secret.yaml.
+# Apart from using ansible-vault create to create a new
+# encrypted file, you can use the command 
+ansible-vault encrypt 
+# to encrypt one or more existing files. The
+# encrypted file can next be used from a playbook, where a
+# password needs to be entered to decrypt.
+# Alternatively, the 
+ansible-vault decrypt 
+# command can be used to decrypt the file.
+
+# use in playbooks
+# When a Vault-encrypted file is accessed from a playbook,
+# a password must be entered. To have the ansibleplaybook
+# command prompt for a password, you need to
+# tell the appropriate option. The option --vault-id
+# @prompt provides the most elegant option, where the
+# ansible-playbook command prompts for a password
+# for each of the Vault-encrypted files that may be used.
+# Using --vault-id @prompt enables a playbook to work
+# with multiple Vault-encrypted files where these files are
+# allowed to have different passwords set. If all Vaultencrypted
+# files a playbook refers to have the same
+# password set, you can use the command ansibleplaybook
+# --ask-vault-pass.
+# Alternatively, you can use the command ansibleplaybook
+# --vault-password-file=secret to obtain
+# the Vault password from a password file. The password
+# file should contain a string that is stored as a single line
+# in the file. Make sure the vault password file is protected
+# through file permissions, such that it is not accessible by
+# unauthorized users!
+
+# exercises
+# 1. Create a secret file containing encrypted values
+# for a variable user and a variable password by using 
+ansible-vault create secrets.yaml
+# Set the password to password and enter the following lines:
+username: bob
+pwhash: password
+# 2. Create the file create-users.yaml and provide the following contents:
+---
+- name: create a user with vaulted variables
+  hosts: ansible1
+  vars_files:
+    - secrets.yaml
+  tasks:
+  - name: creating user
+    user:
+      name: "{{ username }}"
+      password: "{{ pwhash }}"
+# 3. Run the playbook by using 
+ansible-playbook --ask-vault-pass create-users.yaml
+# Provide the password when asked for it.
+# 4. Change the current password on secrets.yaml by using 
+ansible-vault rekey secrets.yaml
+# and set the new password to secretpassword.
+# 5. To automate the process of entering the password, use 
+echo secretpassword > vault-pass
+# 6. Use 
+chmod 400 vault-pass 
+# to ensure the file is readable for the ansible user only; this is
+# about as much as you can do to secure the file.
+# 7. Verify that it’s working by using 
+ansibleplaybook --vault-password-file=vaultpass create-users.yaml.
+
+# capture command output
+# the result of commands can be used as a variable, 
+# using the register parameter in a task.
+# example 
+---
+- name: test register
+  hosts: ansible1
+  tasks:
+  - shell: cat /etc/passwd
+    register: passwd_contents
+  - debug:
+      var: "passwd_contents"
+
+# Notice that in this playbook no names are used for tasks.
+# Using names for tasks is not mandatory; it’s just
+# recommended in more complex playbooks because this
+# convention makes identification of the tasks easier.
