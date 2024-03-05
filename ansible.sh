@@ -210,8 +210,9 @@ ansible all -i inventory -b -m user -a "name=lisa"
 # command module are not interpreted by a shell. This
 # means that common shell features, such as pipes and
 # redirects, don’t work while using the command module.
-# For instance, the command ansible all -m command -
-# a “rpm -qa | grep nmap” does not work.
+# For instance, the command 
+ansible all -m command -a "rpm -qa | grep nmap" 
+# does not work.
 # The command module is the default module. This means
 # that if the option -m command is omitted, Ansible
 # interprets the argument that is provided by default as an
@@ -338,8 +339,8 @@ ansible all -m command -a "systemctl status httpd"
 # found on server1 and the service is inactive and
 # disabled on server2.
 # 7. Use 
-ansible ansible1 -m service -a "name=httpd enabled=yes state=started"
-# to start and enable the httpd service on ansible1.
+ansible server1 -m service -a "name=httpd enabled=yes state=started"
+# to start and enable the httpd service on server1.
 # 8. Run the command 
 ansible all -m command -a "systemctl status httpd" 
 # again to verify the modification has been applied.
@@ -359,13 +360,13 @@ ansible-doc ping
   tasks:
   - name: install package
     yum:
-    name: httpd
-    state: installed
+      name: httpd
+      state: installed
   - name: start and enable service
     service:
-    name: httpd
-    state: started
-    enabled: yes
+      name: httpd
+      state: started
+      enabled: yes
 
 # At the start of each playbook, you find three dashes.
 # Optionally, you may also find three dots at the end of the
@@ -383,13 +384,12 @@ ansible-doc ping
 # tasks is not mandatory but is highly recommended,
 # because using names makes it a little easier to identify
 # which tasks have been able to run successfully. Next, you
-# should identify the arguments that the task should be
-# running.
+# should identify the arguments that the task should be running.
 # To identify hierarchical relations in playbooks, you use
 # indentation. The basic rules for indentation are easy:
-# • Data elements at the same level in the hierarchy
+# Data elements at the same level in the hierarchy
 # must have the same indentation.
-# • Items that are children (properties) and another
+# Items that are children (properties) and another
 # element are indented more than the parents.
 
 # You create indentation using spaces. There is no
@@ -516,8 +516,8 @@ ansible-playbook -C playbook.yml
   - name: copy text
     copy:
       content: |
-        line 1
-        line 2
+        line 1 test
+        line 2 new test
       dest: /tmp/multiline1.txt
 # 3. Add a second task that also uses the copy
 #     module but this time uses the > sign:
@@ -568,7 +568,7 @@ ansible ansible1 -a "cat /tmp/multiline2.txt"
 # the most important guideline from the best practices:
 # keep it simple. If there is no need to put everything in
 # one playbook, then simply don’t. The bigger the
-# playbook, the more difficult it will be to troubleshoot.
+# playbook, the more difficult it will be to troubleshoot
 
 # example multiple playbooks in the same file
 ---
@@ -590,6 +590,9 @@ ansible ansible1 -a "cat /tmp/multiline2.txt"
   - name: test httpd access
     uri:
       url: http://ansible1
+
+# examples of import playbook
+# https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse.html
 
 # we can controll levels of verbosity with the following options
 # -v
@@ -1016,3 +1019,66 @@ ansibleplaybook --vault-password-file=vaultpass create-users.yaml.
 # Using names for tasks is not mandatory; it’s just
 # recommended in more complex playbooks because this
 # convention makes identification of the tasks easier.
+
+# questions
+# 1. What are the two requirements for working with custom facts?
+# 2. Which module is used to enable fact gathering or
+# to run fact gathering manually?
+# 3. What needs to be done to use a fact cache?
+# 4. How can you include a variables file in a playbook?
+# 5. How do you set variables that apply to a group of
+# hosts as defined in the inventory?
+# 6. Which type of multivalued variable should you
+# use if you want to use a loop to parse through the different values?
+# 7. Which magic variable can be used to request
+# current settings for variables on a specific host?
+# 8. How do you change the password on a file that
+# has been encrypted with ansible-vault?
+# 9. How can a Vault-encrypted file that contains
+# variables be assigned to hosts in a specific inventory host group?
+# 10. You have used register in a playbook to register
+# the result of a command in a variable
+# cmd_result. How would you show the exit code
+# of the command in a playbook?
+
+# lab custom facts
+# 1. Create an inventory file where server1 is member of
+# the host group named file and server is member
+# of the host group named lamp.
+# Create a custom facts file that contains a section
+# named packages and set the following variables:
+# smb_package = samba
+# ftp_package = vsftpd
+# db_package = mariadb
+# web_package = httpd
+# firewall_package = firewalld
+# Create another custom facts file that contains a
+# section named services and set the following variables:
+# smb_service = smbd
+# ftp_service = vsftpd
+# db_service = mariadb
+# web_service = httpd
+# firewall_service = firewalld
+# Create a playbook with the name copy_facts.yaml
+# that copies these facts to all managed hosts. In this
+# playbook define a variable remote_dir to specify the
+# directory the fact files should be copied to. Use the
+# variable fact_file to copy the fact files to the
+# appropriate directories.
+# Run the playbook and verify whether it works.
+
+# 2. create a playbook that
+# uses the facts to set up the rest of the environment. Make
+# sure it meets the following requirements:
+# Use a variable inclusion file with the name
+# allvars.yaml and set the following variables:
+# web_root = /var/www/html
+# ftp_root = /var/ftp
+# Create a playbook that sets up the file services and
+# the web services. Also ensure the playbook opens
+# the firewalld firewall to provide access to these servers.
+# Make sure the webservice provides access to a file
+# index.html, which contains the text "Welcome to the Ansible Web Server."
+# Run the playbook and use ad hoc commands to
+# verify that the services have been started.
+
