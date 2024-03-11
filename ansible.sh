@@ -1467,3 +1467,285 @@ ansible-playbook exercise.yaml
       service:
         name: httpd
         state: restarted
+
+# The first play is used to define the file index.html on localhost. 
+# Next, this file is used in the second play to set up the web server.
+# The handler is triggered from the task where the copy module 
+# is used to copy the index.html file. If this task is successful, 
+# the notify statement calls the handler. Notice that handlers 
+# can be specified as a list.
+# All tasks up to copy index.html run successfully. 
+# However, the task copy nothing fails, which is why 
+# the handler does not run. The solution seems easy: 
+# the handler doesn’t run because the task that copies 
+# the file /tmp/nothing fails as the source file doesn’t exist. 
+# So the solution seems simple: create the source file 
+# using touch /tmp/nothing on the control host and run the task again.
+# If a handler is triggered and a task that is later in the play fails, 
+# the handler will not be executed on the node where 
+# the subsequent task has failed. There are two solutions 
+# to prevent this. To start with, you can use 
+# force_handlers: true in the play header to ensure that 
+# the handler will run anyway. You also can use the more generic 
+# ignore_errors: true statement in the play header to accomplish
+# the same thing. Because force_handlers: true is more specific, 
+# using that option is preferred if you just need to make sure 
+# that your handlers will run.
+
+# exercises
+# 1. Open a playbook with the name exercise.yaml. 
+# 2. Define the play header:
+---
+- name: update the kernel
+  hosts: all
+  force_handlers: true
+  tasks:
+# 3. Add a task that updates the current kernel:
+---
+- name: update the kernel
+  hosts: all
+  force_handlers: true
+  tasks:
+  - name: update kernel
+    yum:
+      name: kernel
+      state: latest
+    notify: reboot_server
+# 4. Add a handler that reboots the server 
+# in case the kernel was successfully updated:
+---
+- name: update the kernel
+  hosts: all
+  force_handlers: true
+  tasks:
+  - name: update kernel
+    yum:
+      name: kernel
+      state: latest
+    notify: reboot_server
+  handlers:
+  - name: reboot_server
+    command: reboot
+# 5. Run the playbook using 
+ansible-playbook exercise.yaml 
+# and observe its result. Notice that the handler runs 
+# only if the kernel was updated. If the kernel already was
+# at the latest version, nothing has changed and 
+# the handler does not run. Also notice that it wasn’t 
+# really necessary to use force_handlers in the play header, 
+# but by using it anyway, at least you now know where to use it.
+
+# Tasks in Ansible playbooks are executed 
+# in the order they are specified. 
+# If a task in the playbook fails to execute on a host, 
+# the task generates an error and 
+# the play does not further execute on that specific host. 
+# This also goes for handlers: if any task that follows 
+# the task that triggers a handler fails, the handlers do not run. 
+# In both of these cases, it is important to know that the tasks 
+# that have run successfully still generate their result. 
+# Because this can give an unexpected result, it is important 
+# to always restore the original situation if that happens.
+
+# When you want the entire playbook to stop executing on all hosts 
+# when a failing task is encountered you can use any_errors_fatal 
+# in the play header.
+
+# example ignore errons
+---
+- name: restart sshd only if crond is running
+  hosts: all
+  tasks:
+    - name: get the crond server status
+      command: /usr/bin/systemctl is-active crond
+      ignore_errors: yes
+      register: result
+    - name: restart sshd based on crond status
+      service:
+        name: sshd
+        state: restarted
+      when: result.rc == 0
+
+ # example force handlers
+ ---
+- name: create file on localhost
+  hosts: localhost
+  tasks:
+  - name: create index.html on localhost
+    copy:
+      content: "welcome to the webserver"
+      dest: /tmp/index.html
+- name: set up web server
+  hosts: all
+  force_handlers: yes
+  tasks:
+    - name: install httpd
+      yum:
+        name: httpd
+        state: latest
+    - name: copy index.html
+      copy:
+        src: /tmp/index.html
+        dest: /var/www/html/index.html
+      notify:
+        - restart_web
+    - name: copy nothing - intended to fail
+      copy:
+        src: /tmp/nothing
+        dest: /var/www/html/nothing.html
+  handlers:
+    - name: restart_web
+      service:
+        name: httpd
+        state: restarted
+
+ # example failde when
+ ---
+- name: demonstrating failed_when
+  hosts: all
+  tasks:
+  - name: run a script
+    command: echo hello world
+    ignore_errors: yes
+    register: command_result
+    failed_when: "'world' in command_result.stdout"
+  - name: see if we get here
+    debug:
+      msg: second task executed
+
+ # example changed when
+ ---
+- name: demonstrate changed status
+  hosts: all
+  tasks:
+  - name: check local time
+    command: date
+    register: command_result
+    changed_when: false
+  - name: print local time
+    debug:
+      var: command_result.stdout
+
+ # When you are working with conditional statements, 
+ # blocks can be very useful. A block is a group of tasks 
+ # to which a when statement can be applied. As a result, 
+ # if a single condition is true, multiple tasks can be executed.
+
+ # example blocks
+ - name: simple block example
+   hosts: all
+   block:
+   - name: remove a file
+     shell:
+       cmd: rm /var/www/html/index.html
+   - name: printing status
+     debug:
+       msg: block task was operated
+   rescue:
+   - name: create a file
+     shell:
+       cmd: touch /tmp/rescuefile
+   - name: printing rescue status
+     debug:
+       msg: rescue task was operated
+   always:
+   - name: always write a message to logs
+     shell:
+       cmd: logger hello
+   - name: always printing this message
+     debug:
+       msg: this message is always printed
+
+# Blocks can be used for simple error handling as well, 
+# in such a way that if any task that is defined 
+# in the block statement fails, the tasks that are defined 
+# in the rescue section are executed. Besides that, 
+# an always section can be used to define tasks 
+# that should always run, regardless of the success 
+# or failure of the tasks in the block.
+
+# example rescue and always
+---
+- name: using blocks
+  hosts: all
+  tasks:
+  - name: intended to be successful
+  block:
+  - name: remove a file
+    shell:
+      cmd: rm /var/www/html/index.html
+  - name: printing status
+    debug:
+      msg: block task was operated
+  rescue:
+  - name: create a file
+    shell:
+      cmd: touch /tmp/rescuefile
+  - name: printing rescue status
+    debug:
+      msg: rescue task was operated
+  always:
+  - name: always write a message to logs
+    shell:
+      cmd: logger hello
+  - name: always printing this message
+    debug:
+      msg: this message is always printed
+
+# the tasks in the block were successfully executed, 
+# and for that reason, the tasks in the rescue section 
+# were all skipped, and the tasks in the always section 
+# were also executed successfully. As a result of the code
+# in this specific playbook, the next time that the same playbook 
+# is used, it will not be able to run the tasks in the block statement 
+# (as the file was already removed in the previous run) and, 
+# for that reason, run the tasks in the rescue statement 
+# as well as the tasks in always.
+
+# # questions
+# 1. If a loop is used on the contents of the variable 
+# “{{ services }}”, what is the name of the specific variable 
+# that should be used while iterating over the different values?
+# 2. What should you do to loop over the values in a dictionary?
+# 3. Which statement should you use to run a task only 
+# if a specific condition is true?
+# 4. What do you need to include in your playbook 
+# to have it execute a task only if the variable myvar exists?
+# 5. How do you write a when statement that tests whether 
+# the variable myvar has the string value “myvalue”?
+# 6. Which conditional test should you use to verify 
+# that mypackage is a value in the list mypackages?
+# 7. How would you write a test that checks whether var1 
+# has the value value1 and var2 has the value value2, 
+# or var3 has the value value3 and var4 has the value value4?
+# 8. What can you do to check whether the output of a command, 
+# as registered in the variable cmd_out using register, 
+# contains the text “error”?
+# 9. How can you make sure that a play continues, 
+# even if a specific task has resulted in an error?
+# 10. How can you stop execution of a complete playbook 
+# if any task generates an error?
+
+# lab
+# Write a playbook that meets the following requirements. 
+Use multiple plays in a way that makes sense.
+# • Write a first play that installs the httpd and 
+mod_ssl packages on host ansible2.
+# • Use variable inclusion to define the package names 
+in a separate file.
+# • Use a conditional to loop over the list of packages 
+to be installed.
+# • Install the packages only if the current operating system 
+# is CentOS or RedHat (but not Fedora) version 8.0 or later. 
+# If that is not the case, the playbook should fail 
+# with the error message “Host hostname does not meet 
+# minimal requirements,” where hostname is replaced 
+# with the current host name.
+# • On the Ansible control host, create a file /tmp/index.html. 
+# This file must have the contents “welcome to my webserver”.
+# • If the file /tmp/index.html is successfully copied to 
+# /var/www/html, the web server process must be restarted. 
+# If copying the package fails, the playbook should show 
+# an error message.
+# • The firewall must be opened for the http as well as 
+# the https services.
