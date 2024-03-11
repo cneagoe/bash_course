@@ -1082,3 +1082,388 @@ ansibleplaybook --vault-password-file=vaultpass create-users.yaml.
 # Run the playbook and use ad hoc commands to
 # verify that the services have been started.
 
+# loops and items
+# Some modules enable you to provide a list that needs to be processed. 
+# Many modules don’t, and in these cases, it makes sense to use a loop mechanism 
+# to iterate over a list of items. Take, for instance, the yum module. 
+# While specifying the names of packages, you can use a list of packages. 
+# If, however, you want to do something similar for the service module, 
+# you find out that this is not possible. That is where loops come in.
+
+# example basic
+---
+- name: install and start services
+  hosts: ansible1
+  tasks:
+  - name: install packages
+    yum: name:
+      - vsftpd
+      - httpd
+      - samba
+      state: latest
+  - name: start the services
+    service:
+      name: "{{ item }}"
+      state: started
+      enabled: yes
+    loop:
+    - vsftpd
+    - httpd
+    - smb
+
+# example with vars
+---
+- name: install and start services
+  hosts: ansible1
+  vars:
+    services:
+    - vsftpd
+    - httpd
+    - smb
+  tasks:
+  - name: install packages
+    yum: 
+      name:
+      - vsftpd
+      - httpd
+      - samba
+      state: latest
+  - name: start the services
+    service:
+      name: "{{ item }}"
+      state: started
+      enabled: yes
+    loop: "{{ services }}"
+
+# modify the playbook above so thet the vars are taken from a file
+
+# example complex variables (lists)
+# vars file
+users:
+  - username: linda
+    homedir: /home/linda
+    shell: /bin/bash
+    groups: wheel
+  - username: lisa
+    homedir: /home/lisa
+    shell: /bin/bash
+    groups: users
+  - username: anna
+    homedir: /home/anna
+    shell: /bin/bash
+    groups: users
+# playbook
+---
+- name: create users using a loop from a list
+  hosts: ansible1
+  vars_files: vars/users-list
+  tasks:
+  - name: create users
+    user:
+      name: "{{ item.username }}"
+      state: present
+      groups: "{{ item.groups }}"
+      shell: "{{ item.shell }}"
+    loop: "{{ users }}"
+
+# dictionaries is not supported, 
+# the only way to loop over dictionaries is to use the dict2items filter.
+# check docs for examples
+
+# Since Ansible 2.5, using loop has been the command way to iterate over values 
+# In earlier versions of Ansible, the with_keyword statement was used.
+
+# exercises
+
+# 1. Use your editor to define a variables file with the name 
+# vars/packages and the following contents:
+packages:
+- name: httpd
+  state: absent
+- name: vsftpd
+  state: installed
+- name: mysql-server
+  state: latest
+# 2. Use your editor to define a playbook with the name exercise.yaml and create the play header:
+- name: manage packages using a loop from a list
+  hosts: ansible1
+  vars_files: vars/packages
+  tasks:
+# 3. Continue the playbook by adding the yum task that will manage the packages, 
+# using the packages variable as defined in the vars/packages variable include file:
+- name: manage packages using a loop from a list
+  hosts: ansible1
+  vars_files: vars/packages
+  tasks:
+  - name: install packages
+    yum:
+      name: "{{ item.name }}"
+      state: "{{ item.state }}"
+    loop: "{{ packages }}"
+# 4. Run the playbook using 
+ansible-playbook exercise.yaml
+# and observe the results. In the results you should see which packages 
+# it is trying to manage and in which state it is trying to get the packages.
+
+# In Ansible, you can use a when statement to run tasks conditionally. 
+# Multiple tests can be done using when; for instance, 
+# you can test whether a variable has a specific value, 
+# whether a file exists, whether a minimal amount of memory is available, and more.
+
+# example equals
+---
+- name: conditional install
+  hosts: all
+  tasks:
+  - name: install apache on Red Hat and family
+    yum:
+      name: httpd
+      state: latest
+    when: ansible_facts[’os_family’] == "RedHat"
+  - name: install apache on Ubuntu and family
+    apt:
+      name: apache2
+      state: latest
+    when: ansible_facts[’os_family’] == "Debian"
+
+ # example defined
+---
+- name: check for existence of devices
+  hosts: all
+  tasks:
+  - name: check if /dev/sda exists
+    debug:
+      msg: a disk device /dev/sda exists
+    when: ansible_facts[’devices’][’sda’] is defined
+  - name: check if /dev/sdb exists
+    debug:
+      msg: a disk device /dev/sdb exists
+    when: ansible_facts[’devices’][’sdb’] is defined
+  - name: dummy test, intended to fail
+    debug:
+      msg: failing
+    when: dummy is defined
+  - name: check if /dev/sdc does not exist
+    debug:
+      msg: there is no /dev/sdc device
+    when: ansible_facts[’devices’][’sdc’] is not defined
+
+# example greater/lesser
+---
+- name: conditionals test
+  hosts: all
+  tasks:
+  - name: install vsftpd if sufficient memory available
+    package:
+      name: vsftpd
+      state: latest
+    when: ansible_facts['memory_mb']['real']['free'] > 50
+
+# exampl variable in list
+---
+- name: test if variable is in another variables list
+  hosts: all
+  vars_prompt:
+  - name: my_answer
+    prompt: which package do you want to install
+  vars:
+    supported_packages:
+    - httpd
+    - nginx
+  tasks:
+  - name: something
+    debug:
+      msg: you are trying to install a supported package
+    when: my_answer in supported_packages
+
+# example and/or
+---
+- name: testing multiple conditions
+  hosts: all
+  tasks:
+  - name: showing output
+    debug:
+      msg: using CentOS 8.1
+    when: > 
+      ansible_facts[’distribution_version’] == "8.1" 
+      and 
+      ansible_facts[’distribution’] == "CentOS"
+
+# example complex
+---
+- name: using multiple conditions
+  hosts: all
+  tasks:
+  - package:
+      name: httpd
+      state: removed
+    when: >
+      ( ansible_facts[’distribution’] == "RedHat"
+      and
+        ansible_facts[’memfree_mb’] < 512 )
+      or
+      ( ansible_facts[’distribution’] == "CentOS"
+      and
+        ansible_facts[’memfree_mb’] < 256 )
+
+# example loop and when
+---
+- name: conditionals test
+  hosts: all
+  tasks:
+  - name: update the kernel if sufficient space
+is available in /boot
+    package:
+      name: kernel
+      state: latest
+    loop: "{{ ansible_facts[’mounts’] }}"
+    when: >
+      item.mount == "/boot" 
+      and
+      item.size_available > 200000000
+
+# example register and loop
+---
+- name: test register
+  hosts: all
+  tasks:
+    - shell: cat /etc/passwd
+      register: passwd_contents
+    - debug:
+        msg: passwd contains user lisa
+      when: passwd_contents.stdout.find(’lisa’) != -1
+
+# jinja filters
+# https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_filters.html
+
+# https://docs.python.org/2/library/stdtypes.html#string-methods
+
+# example jinja filter / python string methods
+vars:
+  - mystring: foobar something
+
+tasks:
+- name: capitalize filter
+  debug:
+    # jinja filter
+    msg: "{{ mystring|capitalize() }}"
+- name: capitalize method
+  debug:
+    # python string method
+    msg: "{{ mystring.capitalize() }}"
+
+# Note that when using register, you might want to define a task
+# that runs a command that will fail, 
+# just to capture the return code of that command, 
+# after which the playbook should continue. 
+# If that is the case, you must ensure that ignore_errors: yes
+# is used in the task definition. The default behavior 
+# is that if a task fails, execution of the playbook is aborted, 
+# and no other tasks run.
+
+# exercise
+# 1. Use your editor to create a new file with the name exercise.yaml. 
+# Start writing the play header as follows:
+---
+- name: restart sshd service if httpd is running
+  hosts: ansible1
+  tasks:
+# 2. Add the first task, which checks whether the httpd service 
+# is running, using command output that will be registered. 
+# Notice the use of ignore_errors: yes. 
+# This line makes sure that if the service is not running, 
+# the play is still executed further.
+---
+- name: restart sshd service if httpd is running
+  hosts: ansible1
+  tasks:
+  - name: get httpd service status
+    command: systemctl is-active httpd
+      ignore_errors: yes
+      register: result
+# 3. Add a debug task that shows the output of the command 
+# so that you can analyze what is currently in the registered variable:
+---
+- name: restart sshd service if httpd is running
+  hosts: ansible1
+  tasks:
+  - name: get httpd service status
+    command: systemctl is-active httpd
+    ignore_errors: yes
+    register: result
+  - name: show result variable contents
+    debug:
+      msg: printing the registered variable "{{ result }}"
+# 4. Complete the playbook by including the service task, 
+# which is started only if the value stored in result.rc 
+# (which is the return code of the command that was registered) contains a 0. 
+# This is the case if the previous command executed successfully.
+---
+- name: restart sshd service if httpd is running
+  hosts: ansible1
+  tasks:
+  - name: get httpd service status
+    command: systemctl is-active httpd
+    ignore_errors: yes
+    register: result
+  - name: show result variable contents
+    debug:
+      msg: printing the registered variable "{{ result }}"
+  - name: restart sshd service
+    service:
+      name: sshd
+      state: restarted
+    when: result.rc == 0
+# 5. Use an ad hoc command to make sure the httpd service is installed:
+ansible ansible1 -m yum -a "name=httpd state=latest"
+# 6. Use an ad hoc command to make sure the httpd service is stopped: 
+ansible ansible1 -m service -a "name=httpd state=stopped".
+# 7. Run the playbook using 
+ansible-playbook exercise.yaml 
+# and analyze the result. You should see 
+# that the playbook skips the service task.
+# 8. Type 
+ansible ansible1 -m service -a "name=httpd state=started"
+# and run the playbook again, using 
+ansible-playbook exercise.yaml
+# Playbook execution at this point should be successful.
+
+# handlers (dependencies)
+# A handler is a task that is triggered 
+# and is executed by a another successful task.
+# To work with handlers, you should define a notify statement 
+# at the level where the task is defined. 
+# The notify statement should list the name of the handler.
+# The handlers are listed at the end of the play.
+
+# example
+---
+- name: create file on localhost
+  hosts: localhost
+  tasks:
+  - name: create index.html on localhost
+    copy:
+      content: "welcome to the webserver"
+      dest: /tmp/index.html
+- name: set up web server
+  hosts: all
+  tasks:
+    - name: install httpd
+      yum:
+        name: httpd
+        state: latest
+    - name: copy index.html
+      copy:
+        src: /tmp/index.html
+        dest: /var/www/html/index.html
+      notify:
+        - restart_web
+    - name: copy nothing - intended to fail
+      copy:
+        src: /tmp/nothing
+        dest: /var/www/html/nothing.html
+  handlers:
+    - name: restart_web
+      service:
+        name: httpd
+        state: restarted
