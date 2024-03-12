@@ -904,7 +904,7 @@ users:
 # internal value.
 
 # magic variables example
-ansible localhost -m debug -a 'var=hostvars["ansible1"]'
+ansible localhost -m debug -a 'var=hostvars["server1"]'
 
 # variable precedence
 # The most important advice is to just keep
@@ -972,16 +972,16 @@ ansible-vault decrypt
 # exercises
 # 1. Create a secret file containing encrypted values
 # for a variable user and a variable password by using 
-ansible-vault create secrets.yaml
+ansible-vault create secret.yaml
 # Set the password to password and enter the following lines:
 username: bob
 pwhash: password
 # 2. Create the file create-users.yaml and provide the following contents:
 ---
 - name: create a user with vaulted variables
-  hosts: ansible1
+  hosts: server1
   vars_files:
-    - secrets.yaml
+    - secret.yaml
   tasks:
   - name: creating user
     user:
@@ -991,7 +991,7 @@ pwhash: password
 ansible-playbook --ask-vault-pass create-users.yaml
 # Provide the password when asked for it.
 # 4. Change the current password on secrets.yaml by using 
-ansible-vault rekey secrets.yaml
+ansible-vault rekey secret.yaml
 # and set the new password to secretpassword.
 # 5. To automate the process of entering the password, use 
 echo secretpassword > vault-pass
@@ -1000,7 +1000,7 @@ chmod 400 vault-pass
 # to ensure the file is readable for the ansible user only; this is
 # about as much as you can do to secure the file.
 # 7. Verify that it’s working by using 
-ansibleplaybook --vault-password-file=vaultpass create-users.yaml.
+ansible-playbook --vault-password-file=vault-pass create-users.yaml.
 
 # capture command output
 # the result of commands can be used as a variable, 
@@ -1008,7 +1008,7 @@ ansibleplaybook --vault-password-file=vaultpass create-users.yaml.
 # example 
 ---
 - name: test register
-  hosts: ansible1
+  hosts: server1
   tasks:
   - shell: cat /etc/passwd
     register: passwd_contents
@@ -1093,10 +1093,11 @@ ansibleplaybook --vault-password-file=vaultpass create-users.yaml.
 # example basic
 ---
 - name: install and start services
-  hosts: ansible1
+  hosts: server1
   tasks:
   - name: install packages
-    yum: name:
+    dnf: 
+      name:
       - vsftpd
       - httpd
       - samba
@@ -1114,20 +1115,22 @@ ansibleplaybook --vault-password-file=vaultpass create-users.yaml.
 # example with vars
 ---
 - name: install and start services
-  hosts: ansible1
+  hosts: server1
   vars:
     services:
     - vsftpd
     - httpd
     - smb
+    packages:
+    - vsftpd
+    - httpd
+    - samba
   tasks:
   - name: install packages
-    yum: 
-      name:
-      - vsftpd
-      - httpd
-      - samba
+    package: 
+      name: "{{ item }}"
       state: latest
+    loop: "{{ packages }}"
   - name: start the services
     service:
       name: "{{ item }}"
@@ -1155,7 +1158,7 @@ users:
 # playbook
 ---
 - name: create users using a loop from a list
-  hosts: ansible1
+  hosts: server1
   vars_files: vars/users-list
   tasks:
   - name: create users
@@ -1171,7 +1174,7 @@ users:
 # check docs for examples
 
 # Since Ansible 2.5, using loop has been the command way to iterate over values 
-# In earlier versions of Ansible, the with_keyword statement was used.
+# In earlier versions of Ansible, the with keyword statement was used.
 
 # exercises
 
@@ -1219,12 +1222,12 @@ ansible-playbook exercise.yaml
     yum:
       name: httpd
       state: latest
-    when: ansible_facts[’os_family’] == "RedHat"
+    when: ansible_facts['os_family'] == "RedHat"
   - name: install apache on Ubuntu and family
     apt:
       name: apache2
       state: latest
-    when: ansible_facts[’os_family’] == "Debian"
+    when: ansible_facts['os_family'] == "Debian"
 
  # example defined
 ---
@@ -1234,11 +1237,11 @@ ansible-playbook exercise.yaml
   - name: check if /dev/sda exists
     debug:
       msg: a disk device /dev/sda exists
-    when: ansible_facts[’devices’][’sda’] is defined
+    when: ansible_facts['devices']['sda'] is defined
   - name: check if /dev/sdb exists
     debug:
       msg: a disk device /dev/sdb exists
-    when: ansible_facts[’devices’][’sdb’] is defined
+    when: ansible_facts['devices']['sdb'] is defined
   - name: dummy test, intended to fail
     debug:
       msg: failing
@@ -1246,7 +1249,7 @@ ansible-playbook exercise.yaml
   - name: check if /dev/sdc does not exist
     debug:
       msg: there is no /dev/sdc device
-    when: ansible_facts[’devices’][’sdc’] is not defined
+    when: ansible_facts['devices']['sdc'] is not defined
 
 # example greater/lesser
 ---
@@ -1259,7 +1262,7 @@ ansible-playbook exercise.yaml
       state: latest
     when: ansible_facts['memory_mb']['real']['free'] > 50
 
-# exampl variable in list
+# example variable in list
 ---
 - name: test if variable is in another variables list
   hosts: all
@@ -1285,9 +1288,9 @@ ansible-playbook exercise.yaml
     debug:
       msg: using CentOS 8.1
     when: > 
-      ansible_facts[’distribution_version’] == "8.1" 
+      ansible_facts['distribution_version'] == "8.1" 
       and 
-      ansible_facts[’distribution’] == "CentOS"
+      ansible_facts['distribution'] == "CentOS"
 
 # example complex
 ---
@@ -1296,33 +1299,32 @@ ansible-playbook exercise.yaml
   tasks:
   - package:
       name: httpd
-      state: removed
+      state: latest
     when: >
-      ( ansible_facts[’distribution’] == "RedHat"
+      ( ansible_facts['distribution'] == "RedHat"
       and
-        ansible_facts[’memfree_mb’] < 512 )
+        ansible_facts['memfree_mb'] < 512 )
       or
-      ( ansible_facts[’distribution’] == "CentOS"
+      ( ansible_facts['distribution'] == "CentOS"
       and
-        ansible_facts[’memfree_mb’] < 256 )
+        ansible_facts['memfree_mb'] < 256 )
 
 # example loop and when
 ---
 - name: conditionals test
   hosts: all
   tasks:
-  - name: update the kernel if sufficient space
-is available in /boot
+  - name: update the kernel if sufficient space is available in /boot
     package:
       name: kernel
       state: latest
-    loop: "{{ ansible_facts[’mounts’] }}"
+    loop: "{{ ansible_facts['mounts'] }}"
     when: >
       item.mount == "/boot" 
       and
       item.size_available > 200000000
 
-# example register and loop
+# example register and when
 ---
 - name: test register
   hosts: all
@@ -1331,7 +1333,7 @@ is available in /boot
       register: passwd_contents
     - debug:
         msg: passwd contains user lisa
-      when: passwd_contents.stdout.find(’lisa’) != -1
+      when: passwd_contents.stdout.find('lisa') != -1
 
 # jinja filters
 # https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_filters.html
@@ -1346,7 +1348,7 @@ tasks:
 - name: capitalize filter
   debug:
     # jinja filter
-    msg: "{{ mystring|capitalize() }}"
+    msg: "{{ mystring | capitalize() }}"
 - name: capitalize method
   debug:
     # python string method
@@ -1599,22 +1601,22 @@ ansible-playbook exercise.yaml
         name: httpd
         state: restarted
 
- # example failde when
+ # example failed_when
  ---
 - name: demonstrating failed_when
   hosts: all
   tasks:
   - name: run a script
     command: echo hello world
-    ignore_errors: yes
-    register: command_result
+      ignore_errors: yes
+      register: command_result
     failed_when: "'world' in command_result.stdout"
   - name: see if we get here
     debug:
       msg: second task executed
 
  # example changed when
- ---
+---
 - name: demonstrate changed status
   hosts: all
   tasks:
@@ -1702,7 +1704,7 @@ ansible-playbook exercise.yaml
 # for that reason, run the tasks in the rescue statement 
 # as well as the tasks in always.
 
-# # questions
+# questions
 # 1. If a loop is used on the contents of the variable 
 # “{{ services }}”, what is the name of the specific variable 
 # that should be used while iterating over the different values?
