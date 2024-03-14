@@ -1751,3 +1751,486 @@ to be installed.
 # an error message.
 # • The firewall must be opened for the http as well as 
 # the https services.
+
+# file manipulation
+
+# stat manipulation
+---
+- name: stat module tests
+  hosts: ansible1
+  tasks:
+  - stat:
+      path: /etc/hosts
+    register: st
+  - name: show current values
+    debug:
+      msg: current value of the st variable is {{ st }}
+
+# file state test
+---
+- name: stat module tests
+  hosts: ansible1
+  tasks:
+  - command: touch /tmp/statfile
+  - stat:
+      path: /tmp/statfile
+    register: st
+  - name: show current values
+    debug:
+      msg: current value of the st variable is {{ st }}
+  - fail:
+      msg: "unexpected file mode, should be set to 0640"
+    when: st.stat.mode != '0640'
+
+# line in file
+---
+- name: configuring SSH
+  hosts: all
+  tasks:
+  - name: disable root SSH login
+    lineinfile:
+      dest: /etc/ssh/sshd_config
+      regexp: "^PermitRootLogin"
+      line: "PermitRootLogin no"
+    notify: restart sshd
+  handlers:
+  - name: restart sshd
+    service:
+      name: sshd
+      state: restarted
+
+# block in file
+---
+- name: modifying file
+  hosts: all
+  tasks:
+  - name: ensure /tmp/hosts exists
+    file:
+      path: /tmp/hosts
+      state: touch
+  - name: add some lines to /tmp/hosts
+    blockinfile:
+      path: /tmp/hosts
+      block: |
+        192.168.4.110 host1.example.com
+        192.168.4.120 host2.example.com
+      state: present
+
+# create and remove files
+---
+- name: using the file module
+  hosts: ansible1
+  tasks:
+  - name: create directory
+    file:
+      path: /newdir
+      owner: ansible
+      group: ansible
+      mode: 770
+      state: directory
+  - name: create file in that directory
+    file:
+      path: /newdir/newfile
+      state: touch
+  - name: show the new file
+    stat:
+      path: /newdir/newfile
+    register: result
+  - debug:
+      msg: |
+           This shows that newfile was created
+           "{{ result }}"
+  - name: removing everything again
+    file:
+      path: /newdir
+      state: absent
+
+ # moving files
+ ---
+- name: file copy modules
+  hosts: all
+  tasks:
+  - name: copy file demo
+    copy:
+      src: /etc/hosts
+      dest: /tmp/
+  - name: add some lines to /tmp/hosts
+    blockinfile:
+      path: /tmp/hosts
+      block: |
+        192.168.4.110 host1.example.com
+        192.168.4.120 host2.example.com
+      state: present
+  - name: verify file checksum
+    stat:
+      path: /tmp/hosts
+      checksum_algorithm: md5
+    register: result
+  - debug:
+      msg: "The checksum of /tmp/hosts is {{
+result.stat.checksum }}"
+  - name: fetch a file
+    fetch:
+      src: /tmp/hosts
+      dest: /tmp/
+
+# exercises
+# 1. Create a file with the name exercise.yaml 
+# and give it the following play header:
+---
+- name: testing file manipulation skills
+  hosts: ansible1
+  tasks:
+# 2. Add a task that creates a new empty file:
+---
+- name: testing file manipulation skills
+  hosts: ansible1
+  tasks:
+  - name: create a new file
+    file:
+      name: /tmp/newfile
+      state: touch
+# 3. Use the stat module to check on the status of the new file:
+---
+- name: testing file manipulation skills
+  hosts: ansible1
+  tasks:
+  - name: create a new file
+    file:
+      name: /tmp/newfile
+      state: touch
+  - name: check status of the new file
+    stat:
+      path: /tmp/newfile
+    register: newfile
+# 4. To see what the status module is doing, 
+# add a line that uses the debug module:
+- name: testing file manipulation skills
+  hosts: ansible1
+  tasks:
+  - name: create a new file
+    file:
+      name: /tmp/newfile
+      state: touch
+  - name: check status of the new file
+    stat:
+      path: /tmp/newfile
+    register: newfile
+  - name: for debugging only
+    debug:
+      msg: the current values for newfile are {{ newfile }}
+# 5. Now that you understand which values are stored in newfile, 
+# you can add a conditional playbook that changes 
+# the current owner if not set correctly:      
+---
+- name: testing file manipulation skills
+  hosts: ansible1
+  tasks:
+  - name: create a new file
+    file:
+      name: /tmp/newfile
+      state: touch
+  - name: check status of the new file
+    stat:
+      path: /tmp/newfile
+    register: newfile
+  - name: for debugging only
+    debug:
+      msg: the current values for newfile are {{ newfile }}
+  - name: change file owner if needed
+    file:
+      path: /tmp/newfile
+      owner: ansible
+    when: newfile.stat.pw_name != 'ansible'
+# 6. Add a second play to the playbook 
+# that fetches a remote file:    
+- name: fetching a remote file
+  hosts: ansible1
+  tasks:
+  - name: fetch file from remote machine
+    fetch:
+      src: /etc/motd
+      dest: /tmp
+# 7. Now that you have fetched the file 
+# and it is on the Ansible control machine, 
+# use blockinfile to edit it:      
+- name: adding text to the file that is now on local
+  hosts: localhost
+  tasks:
+  - name: add a message
+    blockinfile:
+      path: /tmp/ansible1/etc/motd
+      block: |
+        welcome to this server
+        for authorized users only
+      state: present
+# 8. In the final step, copy the modified file 
+# to ansible2 by including the following play:
+- name: copy the modified file to ansible2
+  hosts: ansible2
+  tasks:
+  - name: copy motd file
+    copy:
+      src: /tmp/ansible1/etc/motd
+      dest: /tmp
+# 9. At this point you’re ready to run the playbook. Type 
+ansible-playbook exercise.yaml 
+# to run it and observe the results.
+# 10. Type 
+ansible ansible2 -a “cat /tmp/motd” 
+# to verify that the modified motd file 
+# was successfully copied to ansible2.      
+
+# manage selinux
+# When you’re working with SELinux, all of its properties 
+# should be set in the SELinux policy. To do this, 
+# you use the Ansible sefcontext module. 
+# Setting a context type in the policy 
+# doesn’t automatically apply it to files though. 
+# You still need to run the Linux restorecon command to do this. 
+# Ansible does not offer a module to run this command; 
+# it needs to be invoked using the command module.
+# As an alternative, you can use the file module 
+# to set SELinux context. The disadvantage of this approach 
+# is that the context is set directly on the file, 
+# not in the SELinux policy. As a result, 
+# if at any time default context is applied 
+# from the policy to the file system, 
+# all context that has been set with the Ansible file module 
+# risks being overwritten. For that reason, 
+# the recommended way to manage SELinux context in Ansible 
+# is to use the sefcontext module.
+# To be able to work with the Ansible sefcontext module 
+# and the Linux restorecon command, you also need to make sure 
+# that the appropriate software is installed on Linux. 
+# This software comes from the policycoreutils- python-utils 
+# RPM package, which is not installed by default 
+# in all installation patterns.
+
+# example
+---
+- name: show selinux
+  hosts: all
+  tasks:
+  - name: install required packages
+    yum:
+      name: policycoreutils-python-utils
+      state: present
+  - name: create testfile
+    file:
+      name: /tmp/selinux
+      state: touch
+  - name: set selinux context
+    sefcontext:
+      target: /tmp/selinux
+      setype: httpd_sys_content_t
+      state: present
+    notify:
+      - run restorecon
+  handlers:
+  - name: run restorecon
+    command: restorecon -v /tmp/selinux
+# the required software package is installed first. 
+# Next, a test file is created using the file module; 
+# then in the next task the sefcontext command is used 
+# to write the new context to the policy. 
+# If executed successfully, this task will trigger a handler 
+# to run the Linux restorecon command by using the command module.
+
+# example
+---
+- name: enabling SELinux and a boolean
+  hosts: ansible1
+  vars:
+    myboolean: httpd_read_user_content
+  tasks:
+  - name: enabling SELinux
+    selinux:
+      policy: targeted
+      state: enforcing
+  - name: checking current {{ myboolean }} Boolean status
+    shell: getsebool -a | grep {{ myboolean }}
+    register: bool_stat
+  - name: showing boolean status
+    debug:
+      msg: the current {{ myboolean }} status is {{ bool_stat.stdout }}
+  - name: enabling boolean
+    seboolean:
+      name: "{{ myboolean }}"
+      state: yes
+      persistent: yes
+# the selinux module is used to ensure 
+# that SELinux is in the enforcing state. 
+# When using this module, you also have to specify 
+# the name of the policy, which in most cases 
+# is the targeted policy.
+# Next, the seboolean module is used to enable a Boolean. 
+# As you can see, this Boolean is defined 
+# as the variable myboolean. Before the Boolean is enabled, 
+# the shell and debug modules are used to show its current status.  
+
+# exercise
+# In this exercise you configure a more complicated playbook,
+# running different tasks. To guide you through this process, 
+# which will prepare you for the exam in a somewhat better way, 
+# I show you a different approach this time. To start with, 
+# this is the assignment you’re going to work on.
+# Install, start, and configure a web server that has 
+# the DocumentRoot set to the /web directory. In this directory, 
+# create a file named index.html that shows the message 
+# “welcome to the Exercise webserver.” 
+# Ensure that SELinux is enabled and allows access 
+# to the web server document root. Also ensure 
+# that SELinux allows users to publish web pages 
+# from their home directory.
+# 1. Because this is a complex task, you should start this time 
+# by creating a playbook outline. A good approach for doing this 
+# is to create the playbook play header and list all tasks 
+# that need to be accomplished by providing a name 
+# as well as the name of the task that you want to run. 
+# Create this structure as follows:
+---
+- name: Managing web server SELinux properties
+  hosts: ansible1
+  tasks:
+  - name: ensure SELinux is enabled and enforcing
+  - name: install the webserver
+  - name: start and enable the webserver
+  - name: open the firewall service
+  - name: create the /web directory
+  - name: create the index.html file in /web
+  - name: use lineinfile to change webserver configuration
+  - name: use sefcontext to set context on new document
+  - name: run the restorecon command
+  - name: allow the web server to run user content
+# 2. Now that the base structure has been defined, 
+# you can define the rest of the task properties. 
+# To start with, enable SELinux and set to the enforcing state:
+---
+- name: Managing web server SELinux properties
+  hosts: ansible1
+  tasks:
+  - name: ensure SELinux is enabled and enforcing
+    selinux:
+      policy: targeted
+      state: enforcing
+# 3. You can install the web server, start and enable it, 
+# create the /web directory, and create the index.html file 
+# in the /web directory. you can do them all in one run:
+- name: install the webserver
+  yum:
+    name: httpd
+    state: latest
+- name: start and enable the webserver
+  service:
+    name: httpd
+    state: started
+    enabled: yes
+- name: open the firewall service
+  firewalld:
+    service: http
+    state: enabled
+    immediate: yes
+- name: create the /web directory
+  file:
+    name: /web
+    state: directory
+- name: create the index.html file in /web
+  copy:
+    content: 'welcome to the exercise82 web server'
+    dest: /web/index.html
+- name: use lineinfile to change webserver configuration
+- name: use sefcontext to set context on new document
+- name: run the restorecon command
+- name: allow the web server to run user content
+# 4. You must use the lineinfile module to change 
+# the httpd.conf contents. Two different lines 
+# need to be changed, which you accomplish by making 
+# the following modifications:
+- name: use lineinfile to change webserver configuration
+  lineinfile:
+    path: /etc/httpd/conf/httpd.conf
+    regexp: ’^DocumentRoot "/var/www/html"’
+    line: DocumentRoot "/web"
+- name: use lineinfile to change webserver security
+  lineinfile:
+    path: /etc/httpd/conf/httpd.conf
+    regexp: ’^<Directory "/var/www">’
+    line: ’<Directory "/web">’
+- name: use sefcontext to set context on new document
+- name: run the restorecon command
+- name: allow the web server to run user content
+# 5. In the final steps, you take care of configuring 
+# the SELinux-specific settings:
+- name: use sefcontext to set context on new docum
+  sefcontext:
+    target: ’/web(/.*)?
+    setype: httpd_sys_content_t
+    state: present
+- name: run the restorecon command
+  command: restorecon -Rv /web
+- name: allow the web server to run user content
+  seboolean:
+    name: httpd_read_user_content
+    state: yes
+    persistent: yes
+# 6. At this point, the complete playbook should look as follows:
+---
+- name: Managing web server SELinux properties
+  hosts: ansible1
+  tasks:
+  - name: ensure SELinux is enabled and enforcing
+    selinux:
+      policy: targeted
+      state: enforcing
+  - name: install the webserver
+    yum:
+      name: httpd
+      state: latest
+  - name: start and enable the webserver
+    service:
+      name: httpd
+      state: started
+      enabled: yes
+  - name: open the firewall service
+    firewalld:
+      service: http
+      state: enabled
+      immediate: yes
+  - name: create the /web directory
+    file:
+      name: /web
+      state: directory
+  - name: create the index.html file in /web
+    copy:
+      content: ’welcome to the exercise82 web serve
+      dest: /web/index.html
+  - name: use lineinfile to change webserver configu
+    lineinfile:
+      path: /etc/httpd/conf/httpd.conf
+      regexp: ’^DocumentRoot "/var/www/html"’
+      line: DocumentRoot "/web"
+  - name: use lineinfile to change webserver securit
+    lineinfile:
+      path: /etc/httpd/conf/httpd.conf
+      regexp: ’^<Directory "/var/www">’
+      line: ’<Directory "/web">’
+  - name: use sefcontext to set context on new docum
+    sefcontext:
+      target: ’/web(/.*)?’
+      setype: httpd_sys_content_t
+      state: present
+  - name: run the restorecon command
+    command: restorecon -Rv /web
+  - name: allow the web server to run user content
+    seboolean:
+      name: httpd_read_user_content
+      state: yes
+      persistent: yes
+# 7. Run the playbook by using 
+ansible-playbook exercise.yaml 
+# and verify its output.      
+# 8. Verify that the web service is accessible by using 
+curl http://ansible1
+# In this case, it should not work. Try to analyze why.
+# Is the web server started?
