@@ -149,3 +149,6 @@ git push origin v1.5
 # so we will need to be explicit
 # push all tags
 git push origin --tags
+
+# create a new branch
+git branch testing
