@@ -150,5 +150,55 @@ git push origin v1.5
 # push all tags
 git push origin --tags
 
+#branching
 # create a new branch
-git branch testing
+git branch FT-001
+# switch to the new branch 
+git checkout FT-001
+# set the upstream
+git push --set-upstream origin FT-001
+# make a change
+touch some_test_file
+git add * 
+git commit -m "added file"
+# push changes from remote to origin
+git push
+
+# for git > 2.3
+# create new branch and switch to it
+git switch -c new-branch
+# switch back to the original branch
+git switch -
+
+# types of merges
+# fast forward
+# if latest commit on destination branch is the same as
+# first commit on source branch
+git checkout dev
+git merge FT-001
+# head pointer is moved to latest commit from source branch
+# source branch can now be safely removed
+git branch -d FT-001
+
+# three way merge
+# if latest commit on destination branch is not the same as
+# first commit on source branch
+# this usualy happens when multiple teams work on the same project
+git switch -c FT-002
+git touch change
+git add *
+git commit -m "change"
+git push
+git checkout main 
+git touch new_feature 
+git add *
+git commit -m "FT-003"
+git merge FT-002
+# git will take lotest commit on source branch 
+# together with latest commit on destination branch
+# and build a third commit from integrating the changes in these two commits
+# hence the name three way merge
+
+
+# git branching strategy
+# https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow
