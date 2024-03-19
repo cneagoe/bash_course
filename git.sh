@@ -150,7 +150,7 @@ git push origin v1.5
 # push all tags
 git push origin --tags
 
-#branching
+# branching
 # create a new branch
 git branch FT-001
 # switch to the new branch 
@@ -202,3 +202,15 @@ git merge FT-002
 
 # git branching strategy
 # https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow
+
+# 1 dev - 1 team
+# ----------feature branch------------------------
+# all devs
+# ----------dev branch----------------------------
+# qa (manual/automat)
+# ----------test branch---------------------------
+# no one has access, is usualy reserved for integration testing
+# ----------acceptance/staging branch---------------------
+# no one has access, is used for delivery
+# ----------production branch---------------------
+
